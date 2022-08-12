@@ -8,6 +8,7 @@ library(stringr)
 library(bit64)
 library("writexl")
 library(tidyselect)
+select <- dplyr::select
 
 
 ################################################################################

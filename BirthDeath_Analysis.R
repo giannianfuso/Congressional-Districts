@@ -18,6 +18,7 @@ library(sp)
 library(plotly)
 library(dineq)
 library(ggh4x)
+select <- dplyr::select
 
 
 ################################################################################
@@ -582,6 +583,13 @@ DOD_byEducSexCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAge
   select(-c(DOD, Population))
 
 write.csv(DOD_byEducSexCD_2, file = "DOD_byEducSexCD_2.csv")
+
+#Combined congress - with details
+DOD_byEducSexCD_2_details <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population))
 
 #Sensitivity analysis - original population pull
 DOD_byEducSexCD_2_orig <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2_orig) %>%
