@@ -117,7 +117,7 @@ save(IMR_byCD_byRace_2, file = "./ShinyApp/IMR_byCD_byRace_2.Rdata")
 
 #All details for regression
 IMR_byCD_byRace_2_details <- inner_join(infMort_byCD_byRace_2, liveBirths_byCD_byRace_2) %>%
-  filter(as.integer(RACEHISP) != 7) %>%
+  filter(RACEHISP!="Unknown")%>%
   mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD), 
          RACEHISP = relevel(RACEHISP, ref = 'Non-Hispanic White'))
 
@@ -131,6 +131,11 @@ IMR_byCD_byRace_2_cd116 <- inner_join(infMort_byCD_byRace_2_cd116, liveBirths_by
 
 #Save as R Object
 save(IMR_byCD_byRace_2_cd116, file = "./ShinyApp/IMR_byCD_byRace_2_cd116.Rdata")
+
+#With details for regression
+IMR_byCD_byRace_2_cd116_details <- inner_join(infMort_byCD_byRace_2_cd116, liveBirths_byCD_byRace_2_cd116) %>%
+  mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD),
+         RACEHISP = relevel(RACEHISP, ref = 'Non-Hispanic White'))
 
 ################################################################################
 
@@ -205,13 +210,12 @@ IMR_byCD_byRace_relDisparity_2 <- full_join(IMR_byCD_byRace_2,
 
 #Create tables for paper
 IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
-  filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6) %>%
+  filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
+         RACEHISP!="Non-Hispanic Other") %>%
   mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
            str_replace_all("Hispanic -", "H -") %>%
-           str_replace_all("Non-Hispanic White", "NHW") %>%
            str_replace_all("Non-Hispanic Black", "NHB") %>%
-           str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI") %>%
-           str_replace_all("Non-Hispanic Other", "NHO")) %>%
+           str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
   pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
   ungroup() %>%
   select(-c(CONGRESS2, RACEHISP, paired)) %>%
@@ -219,13 +223,12 @@ IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   summarise_all(sum) %>%
   bind_cols({
     IMR_byCD_byRace_absDisparity_2 %>%
-      filter(as.integer(CONGRESS2) == 2, as.integer(RACEHISP) <= 6) %>%
+      filter(as.integer(CONGRESS2) == 2, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
+             RACEHISP!="Non-Hispanic Other") %>%
       mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
                str_replace_all("Hispanic -", "H -") %>%
-               str_replace_all("Non-Hispanic White", "NHW") %>%
                str_replace_all("Non-Hispanic Black", "NHB") %>%
-               str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI") %>%
-               str_replace_all("Non-Hispanic Other", "NHO")) %>%
+               str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
       pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
       ungroup() %>%
       select(-c(CONGRESS2, RACEHISP, paired)) %>%
@@ -233,21 +236,19 @@ IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
       group_by(CD) %>%
       summarise_all(sum)
   }) %>%
-  select(-c(CD...7)) %>%
-  rename(CD = CD...1) %>%
-  relocate(1,3,2,4,5,6,8,7,9,10)
+  select(-c(CD...5)) %>%
+  rename(CD = CD...1)
 
 #Write to csv
 write.csv(IMR_byCD_byRace_absDisparity_2_table, "./Final Results/IMR_byCD_byRace_absDisparity_2_table.csv", row.names = FALSE)
 
 IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
-  filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6) %>%
+  filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
+         RACEHISP!="Non-Hispanic Other") %>%
   mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
            str_replace_all("Hispanic -", "H -") %>%
-           str_replace_all("Non-Hispanic White", "NHW") %>%
            str_replace_all("Non-Hispanic Black", "NHB") %>%
-           str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI") %>%
-           str_replace_all("Non-Hispanic Other", "NHO")) %>%
+           str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
   pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
   ungroup() %>%
   select(-c(CONGRESS2, RACEHISP, paired)) %>%
@@ -255,13 +256,12 @@ IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
   summarise_all(sum) %>%
   bind_cols({
     IMR_byCD_byRace_relDisparity_2 %>%
-      filter(as.integer(CONGRESS2) == 2, as.integer(RACEHISP) <= 6) %>%
+      filter(as.integer(CONGRESS2) == 2, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
+             RACEHISP!="Non-Hispanic Other") %>%
       mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
                str_replace_all("Hispanic -", "H -") %>%
-               str_replace_all("Non-Hispanic White", "NHW") %>%
                str_replace_all("Non-Hispanic Black", "NHB") %>%
-               str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI") %>%
-               str_replace_all("Non-Hispanic Other", "NHO")) %>%
+               str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
       pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
       ungroup() %>%
       select(-c(CONGRESS2, RACEHISP, paired)) %>%
@@ -269,9 +269,8 @@ IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
       group_by(CD) %>%
       summarise_all(sum)
   }) %>%
-  select(-c(CD...7)) %>%
-  rename(CD = CD...1) %>%
-  relocate(1,3,2,4,5,6,8,7,9,10)
+  select(-c(CD...5)) %>%
+  rename(CD = CD...1)
 
 #Write to csv
 write.csv(IMR_byCD_byRace_relDisparity_2_table, "./Final Results/IMR_byCD_byRace_relDisparity_2_table.csv", row.names = FALSE)
@@ -421,6 +420,13 @@ DOD_byRaceSexCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAge
   select(-c(DOD, Population))
 write.csv(DOD_byRaceSexCD_2, file = "DOD_byRaceSexCD_2.csv")
 
+#Mortality Rates - Combined congresses - with details
+DOD_byRaceSexCD_2_details <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population), as.integer(RACE)!=3)
+
 #Sensitivity analysis -- original method of pulling population
 DOD_byRaceSexCD_2_orig <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2_orig) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
@@ -443,6 +449,13 @@ DOD_byRaceSexCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_
 
 #Save as R Object
 save(DOD_byRaceSexCD_2_cd116, file = "./ShinyApp/DOD_byRaceSexCD_2_cd116.Rdata")
+
+#Mortality Rates - cd116 - with details
+DOD_byRaceSexCD_2_cd116_details <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population), as.integer(RACE)!=3)
 
 #Mortality Rates - Combined congresses - Wider
 # DOD_byRaceSexCD_2_wider <- DOD_byRaceSexCD_2 %>%
