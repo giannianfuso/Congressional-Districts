@@ -242,6 +242,24 @@ server <- function(input, output, session) {
     map
   })
   
+
+  #Color themes -----
+  
+  ## For this type of data you should utilize lists! it keeps everything together and easily accessible. 
+  colors = list()
+  colors$AAPI <- "#50bde9"
+  colors$AmericanIndian <- "#009e74"
+  colors$Black <- "#d55e00"
+  colors$Hispanic <- "#cc79a7"
+  colors$White <- "#f0e442"
+  
+  colors$LessHS <- "#cc79a7"
+  colors$HS <- "#009e73"
+  colors$SomeCollege <- "#0072b2"
+  colors$Bachelor <- "#f0e442"
+  
+  # Charts Input updater----
+  
   toListen_subgroup <- reactive({list(input$Measure_Charts,input$Displayed) })
   observeEvent(toListen_subgroup(), {
     req(input$Measure_Charts )
@@ -275,20 +293,6 @@ server <- function(input, output, session) {
     
   })
   
-  #Color themes -----
-  
-  ## For this type of data you should utilize lists! it keeps everything together and easily accessible. 
-  colors = list()
-  colors$AAPI <- "#50bde9"
-  colors$AmericanIndian <- "#009e74"
-  colors$Black <- "#d55e00"
-  colors$Hispanic <- "#cc79a7"
-  colors$White <- "#f0e442"
-  
-  colors$LessHS <- "#cc79a7"
-  colors$HS <- "#009e73"
-  colors$SomeCollege <- "#0072b2"
-  colors$Bachelor <- "#f0e442"
   
   # Lollipop -----
   output$Lollipop <- renderPlotly({
