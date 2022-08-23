@@ -12,7 +12,7 @@
   ## Helpers (for now you can just source files but eventually refactor to modules is best for maintainability)
   source("R/helpers/plot_imr_race.R")
   source("R/helpers/plot_dod.R")
-  }
+}
 
 ui <- fluidPage(
   tags$head(tags$style(HTML(".leaflet-container {background: none;}"))),
@@ -140,6 +140,7 @@ server <- function(input, output, session) {
   #Sakney
   load(file = "sankey_111_113_full.Rdata", envir=.GlobalEnv)
   
+  # Maps ------
   output$Maps <- renderLeaflet({
     imr_popup <- paste0("<strong>", filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$CD, 
                         "</strong>", "<br><strong>Infant Mortality Rate: </strong>", 
@@ -149,8 +150,8 @@ server <- function(input, output, session) {
                                domain = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR))
     
     imr_colors_rev <- colorNumeric(palette = "viridis", reverse = TRUE,
-                               domain = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR))
-        
+                                   domain = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR))
+    
     IMR_Maps_Interactive <- leaflet(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)) %>%
       addPolygons(
         stroke = TRUE,
@@ -161,10 +162,10 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         popup = imr_popup) %>%
       addLegend("topright", pal = imr_colors_rev, 
-        #values = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR),
-        values = IMR_Maps_byCD_2$IMR,
-        title = "IMR, per 1,000 <br> Live Births", opacity = 1,
-        labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)}))
+                #values = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR),
+                values = IMR_Maps_byCD_2$IMR,
+                title = "IMR, per 1,000 <br> Live Births", opacity = 1,
+                labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)}))
     
     imr_popup_cd116 <- paste0("<strong>", IMR_Maps_cd116$CD, 
                               "</strong>", "<br><strong>Infant Mortality Rate: </strong>", 
@@ -184,19 +185,19 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         popup = imr_popup_cd116) %>%
       addLegend("topright", pal = imr_colors_cd116_rev, values = IMR_Maps_cd116$IMR,
-        title = "IMR, per 1,000 <br> Live Births",
-        opacity = 1,
-        labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
+                title = "IMR, per 1,000 <br> Live Births",
+                opacity = 1,
+                labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
     
     dod_popup <- paste0("<strong>", filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$CD, 
                         "</strong>", "<br><strong>DOD Mortality Rate: </strong>", 
                         round(filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR,2))
-  
+    
     dod_colors <- colorNumeric(palette = "viridis", reverse = FALSE,
                                domain = filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR)
     
     dod_colors_rev <- colorNumeric(palette = "viridis", reverse = TRUE,
-                               domain = filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR)
+                                   domain = filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR)
     
     DOD_Maps_Interactive <- leaflet(filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)) %>%
       addPolygons(
@@ -208,9 +209,9 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         popup = dod_popup) %>%
       addLegend("topright", pal = dod_colors_rev, values = DOD_Maps_byCD_2$MR,
-        title = "DOD MR <br> per 10,000",
-        opacity = 1,
-        labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
+                title = "DOD MR <br> per 10,000",
+                opacity = 1,
+                labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
     
     dod_popup_cd116 <- paste0("<strong>", DOD_Maps_cd116$CD, 
                               "</strong>", "<br><strong>DOD Mortality Rate: </strong>", 
@@ -230,9 +231,9 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         popup = dod_popup_cd116) %>%
       addLegend("topright", pal = dod_colors_cd116_rev, values = DOD_Maps_cd116$MR,
-        title = "DOD MR <br> per 10,000",
-        opacity = 1,
-        labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
+                title = "DOD MR <br> per 10,000",
+                opacity = 1,
+                labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
     
     if(input$Congress_Maps != "116 (2019 - 2020)*" && input$Measure_Maps == "Infant Mortality Rate") {map <- IMR_Maps_Interactive}
     if(input$Congress_Maps != "116 (2019 - 2020)*" && input$Measure_Maps == "Deaths of Despair Mortality Rate") {map <- DOD_Maps_Interactive}
@@ -267,15 +268,14 @@ server <- function(input, output, session) {
       TRUE ~ c("Mortality Rates", "Absolute Disparities")
     )
   })
-
+  
   observeEvent(displayed(), {
     choices <- displayed()
     updateSelectInput(inputId = "Displayed", choices = choices)
-
+    
   })
   
-  ################################################################################
-  #Color themes:
+  #Color themes -----
   
   ## For this type of data you should utilize lists! it keeps everything together and easily accessible. 
   colors = list()
@@ -290,53 +290,52 @@ server <- function(input, output, session) {
   colors$SomeCollege <- "#0072b2"
   colors$Bachelor <- "#f0e442"
   
-  ################################################################################
-
-   output$Lollipop <- renderPlotly({
+  # Lollipop -----
+  output$Lollipop <- renderPlotly({
     if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Mortality Rates") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_imr_race(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
-        (input$Displayed == "Mortality Rates") &
-        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-          plot_imr_race(filter(IMR_byCD_byRace_2_cd116, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
+       (input$Displayed == "Mortality Rates") &
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+         plot_imr_race(filter(IMR_byCD_byRace_2_cd116, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2, as.integer(RACEHISP) != 2, as.integer(RACEHISP) < 6), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
-        (input$Displayed == "Absolute Disparities") &
-        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-          plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2_cd116, as.integer(RACEHISP) != 2, as.integer(RACEHISP) < 6, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
+       (input$Displayed == "Absolute Disparities") &
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+         plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2_cd116, as.integer(RACEHISP) != 2, as.integer(RACEHISP) < 6, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_dod(filter(DOD_byRaceSexCD_2, MR > 0, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
-        (input$Subgroup == "Race") &
-        (input$Displayed == "Mortality Rates") &
-        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-          plot_dod(filter(DOD_byRaceSexCD_2_cd116, MR > 0, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+       (input$Subgroup == "Race") &
+       (input$Displayed == "Mortality Rates") &
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+         plot_dod(filter(DOD_byRaceSexCD_2_cd116, MR > 0, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_dod(filter(DOD_byRaceSexCD_absDisparity_2, as.integer(RACE) != 1, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
-        (input$Subgroup == "Race") &
-        (input$Displayed == "Absolute Disparities") &
-        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-          plot_dod(filter(DOD_byRaceSexCD_absDisparity_2_cd116, as.integer(RACE) != 1, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+       (input$Subgroup == "Race") &
+       (input$Displayed == "Absolute Disparities") &
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+         plot_dod(filter(DOD_byRaceSexCD_absDisparity_2_cd116, as.integer(RACE) != 1, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") & 
        (input$Subgroup == "Race (Rolled-Up)") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_dod(filter(DOD_byRace2SexCD_2, MR > 0), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
-      (input$Subgroup == "Race (Rolled-Up)") &
-      (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-        plot_dod(filter(DOD_byRace2SexCD_2_cd116, MR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+       (input$Subgroup == "Race (Rolled-Up)") &
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+         plot_dod(filter(DOD_byRace2SexCD_2_cd116, MR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Mortality Rates") &
@@ -356,7 +355,7 @@ server <- function(input, output, session) {
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
          plot_dod(filter(DOD_byEducSexCD_absDisparity_2_cd116, as.integer(EDUC) != 4, as.integer(EDUC) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
-     filename
+    filename
   })
   
   output$Sankey <- renderHighchart({
