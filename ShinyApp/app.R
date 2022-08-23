@@ -264,21 +264,39 @@ server <- function(input, output, session) {
   observeEvent(toListen_subgroup(), {
     req(input$Measure_Charts )
     req(input$Displayed )
+    
+    ## Dev logs
+    print("------------------")
+    print("UPDATE  Subgroup!!!!!!!!")
+    print(input$Measure_Charts)
+    print(input$Displayed)
+    print(input$Subgroup)
+    print("------------------")
+    
+    ## Update subgroup
     choices_list_subgroup = case_when(
       input$Measure_Charts == "Infant Mortality Rate" ~ list(c("Race/Ethnicity")),
       input$Measure_Charts == "Deaths of Despair Mortality Rate" && input$Displayed == "Mortality Rates" ~ list(c("Race", "Race (Rolled-Up)", "Education")),
       input$Measure_Charts == "Deaths of Despair Mortality Rate" && input$Displayed == "Absolute Disparities" ~ list(c("Race", "Education")))
     updateSelectInput(inputId = "Subgroup", choices =  unlist(choices_list_subgroup))
-  })
-  
-  toListen_ageGroup <- reactive({list(input$Measure_Charts) })
-  observeEvent(toListen_ageGroup(), {
-    req(input$Measure_Charts )
+    
+    ## Update ageGroup
     choices_list_ageGroup = case_when(
       input$Measure_Charts == "Infant Mortality Rate" ~ list(c("All ages groups combined")),
       input$Measure_Charts == "Deaths of Despair Mortality Rate" ~ list(c("25 to 34 years", "35 to 44 years", "45 to 64 years")))
     updateSelectInput(inputId = "AgeGroup", choices =  unlist(choices_list_ageGroup))
+    
   })
+  
+  # toListen_ageGroup <- reactive({list(input$Measure_Charts) })
+  # observeEvent(toListen_ageGroup(), {
+  #   print('UDPATE AgeGroup!!!!!!!!!!!!!!!!')
+  #   req(input$Measure_Charts )
+  #   choices_list_ageGroup = case_when(
+  #     input$Measure_Charts == "Infant Mortality Rate" ~ list(c("All ages groups combined")),
+  #     input$Measure_Charts == "Deaths of Despair Mortality Rate" ~ list(c("25 to 34 years", "35 to 44 years", "45 to 64 years")))
+  #   updateSelectInput(inputId = "AgeGroup", choices =  unlist(choices_list_ageGroup))
+  # })
   
   displayed <- reactive({
     choices <- case_when(
@@ -288,9 +306,9 @@ server <- function(input, output, session) {
   })
   
   observeEvent(displayed(), {
+    print('UDPATE Displayed!!!!!!!!!!!!!!!!')
     choices <- displayed()
     updateSelectInput(inputId = "Displayed", choices = choices)
-    
   })
   
   
@@ -298,47 +316,47 @@ server <- function(input, output, session) {
   output$Lollipop <- renderPlotly({
     if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Mortality Rates") &
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
          plot_imr_race(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Mortality Rates") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_imr_race(filter(IMR_byCD_byRace_2_cd116, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
          plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2, as.integer(RACEHISP) != 2, as.integer(RACEHISP) < 6), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2_cd116, as.integer(RACEHISP) != 2, as.integer(RACEHISP) < 6, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates") &
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byRaceSexCD_2, MR > 0, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byRaceSexCD_2_cd116, MR > 0, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byRaceSexCD_absDisparity_2, as.integer(RACE) != 1, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byRaceSexCD_absDisparity_2_cd116, as.integer(RACE) != 1, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
-    if((input$Measure_Charts == "Deaths of Despair Mortality Rate") & 
+    if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race (Rolled-Up)") &
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byRace2SexCD_2, MR > 0), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race (Rolled-Up)") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byRace2SexCD_2_cd116, MR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
@@ -347,21 +365,21 @@ server <- function(input, output, session) {
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Mortality Rates") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byEducSexCD_2_cd116, MR > 0, as.integer(EDUC) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byEducSexCD_absDisparity_2, as.integer(EDUC) != 4, as.integer(EDUC) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byEducSexCD_absDisparity_2_cd116, as.integer(EDUC) != 4, as.integer(EDUC) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     filename
   })
-  
+
   output$Sankey <- renderHighchart({
     hchart(sankey_111_113_full, "sankey", name = "Tract Count")
   })
