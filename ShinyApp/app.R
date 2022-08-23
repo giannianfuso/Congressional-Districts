@@ -265,14 +265,6 @@ server <- function(input, output, session) {
     req(input$Measure_Charts )
     req(input$Displayed )
     
-    ## Dev logs
-    print("------------------")
-    print("UPDATE  Subgroup!!!!!!!!")
-    print(input$Measure_Charts)
-    print(input$Displayed)
-    print(input$Subgroup)
-    print("------------------")
-    
     ## Update subgroup
     choices_list_subgroup = case_when(
       input$Measure_Charts == "Infant Mortality Rate" ~ list(c("Race/Ethnicity")),
@@ -288,15 +280,6 @@ server <- function(input, output, session) {
     
   })
   
-  # toListen_ageGroup <- reactive({list(input$Measure_Charts) })
-  # observeEvent(toListen_ageGroup(), {
-  #   print('UDPATE AgeGroup!!!!!!!!!!!!!!!!')
-  #   req(input$Measure_Charts )
-  #   choices_list_ageGroup = case_when(
-  #     input$Measure_Charts == "Infant Mortality Rate" ~ list(c("All ages groups combined")),
-  #     input$Measure_Charts == "Deaths of Despair Mortality Rate" ~ list(c("25 to 34 years", "35 to 44 years", "45 to 64 years")))
-  #   updateSelectInput(inputId = "AgeGroup", choices =  unlist(choices_list_ageGroup))
-  # })
   
   displayed <- reactive({
     choices <- case_when(
@@ -306,7 +289,6 @@ server <- function(input, output, session) {
   })
   
   observeEvent(displayed(), {
-    print('UDPATE Displayed!!!!!!!!!!!!!!!!')
     choices <- displayed()
     updateSelectInput(inputId = "Displayed", choices = choices)
   })
