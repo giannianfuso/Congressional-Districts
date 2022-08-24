@@ -282,10 +282,11 @@ server <- function(input, output, session) {
   
   
   displayed <- reactive({
-    choices <- case_when(
-      input$Subgroup == "Race (Rolled-Up)" ~ c("Mortality Rates"),
-      TRUE ~ c("Mortality Rates", "Absolute Disparities")
-    )
+    choices <- c("Mortality Rates", "Absolute Disparities")
+    #   case_when(
+    #   input$Subgroup == "Race (Rolled-Up)" ~ c("Mortality Rates"),
+    #   TRUE ~ c("Mortality Rates", "Absolute Disparities")
+    # )
   })
   
   observeEvent(displayed(), {
