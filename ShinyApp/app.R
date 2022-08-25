@@ -102,11 +102,11 @@ server <- function(input, output, session) {
   load(file = "IMR_byCD_byRace_2_cd116.Rdata", envir=.GlobalEnv)
   
   #IMR plot data - disparities
-  load(file = "IMR_byCD_byRace_absDisparity_2.Rdata", envir=.GlobalEnv)
+  #load(file = "IMR_byCD_byRace_absDisparity_2.Rdata", envir=.GlobalEnv)
   load(file="CI_estim_rate_imr_add_fast_charts.Rdata", envir=.GlobalEnv)
   
   #IMR plot data - disparities - cd116
-  load(file = "IMR_byCD_byRace_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
+  #load(file = "IMR_byCD_byRace_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
   load(file="CI_estim_rate_imr_add_fast_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race
@@ -116,11 +116,11 @@ server <- function(input, output, session) {
   load(file = "DOD_byRaceSexCD_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - disparities
-  load(file = "DOD_byRaceSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
+  #load(file = "DOD_byRaceSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
   load(file="CI_estim_rate_dod_race_add.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - disparities - cd116
-  load(file = "DOD_byRaceSexCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
+  #load(file = "DOD_byRaceSexCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
   load(file="CI_estim_rate_dod_race_add_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - rolled up
@@ -136,11 +136,11 @@ server <- function(input, output, session) {
   load(file = "DOD_byEducSexCD_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by education - disparities
-  load(file = "DOD_byEducSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
+  #load(file = "DOD_byEducSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
   load(file= "CI_estim_rate_dod_add_fast_charts.Rdata", envir = .GlobalEnv)
   
   #DOD plot data - by education - disparities - cd116
-  load(file = "DOD_byEducSexCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
+  #load(file = "DOD_byEducSexCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
   load(file="CI_estim_rate_dod_add_fast_cd116.Rdata", envir=.GlobalEnv)
   
   #Sakney
@@ -168,17 +168,11 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         popup = imr_popup) %>%
       addLegend("topright", pal = imr_colors_rev, 
-<<<<<<< Updated upstream
                 #values = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR),
                 values = IMR_Maps_byCD_2$IMR,
                 title = "IMR, per 1,000 <br> Live Births", opacity = 1,
                 labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)}))
-=======
         #values = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR),
-        values = IMR_Maps_byCD_2$IMR,
-        title = "IMR, per 1,000 <br> Live Births", opacity = 1,
-        labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)}, suffix = ".0"))
->>>>>>> Stashed changes
     
     imr_popup_cd116 <- paste0("<strong>", IMR_Maps_cd116$CD, 
                               "</strong>", "<br><strong>Infant Mortality Rate: </strong>", 
@@ -198,15 +192,10 @@ server <- function(input, output, session) {
         smoothFactor = 0.5,
         popup = imr_popup_cd116) %>%
       addLegend("topright", pal = imr_colors_cd116_rev, values = IMR_Maps_cd116$IMR,
-<<<<<<< Updated upstream
+
                 title = "IMR, per 1,000 <br> Live Births",
                 opacity = 1,
                 labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
-=======
-        title = "IMR, per 1,000 <br> Live Births",
-        opacity = 1,
-        labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE), suffix = ".0"))
->>>>>>> Stashed changes
     
     dod_popup <- paste0("<strong>", filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$CD, 
                         "</strong>", "<br><strong>DOD Mortality Rate: </strong>", 
@@ -324,23 +313,14 @@ server <- function(input, output, session) {
        (input$Displayed == "Mortality Rates") &
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
          plot_imr_race(filter(IMR_byCD_byRace_2_cd116, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
-    if((input$Measure_Charts == "Infant Mortality Rate") &
+     if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Absolute Disparities") &
-<<<<<<< Updated upstream
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
-         plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2, as.integer(RACEHISP) != 2, as.integer(RACEHISP) < 6), colors, input$Congress_Charts, input$Displayed)}
-    if((input$Measure_Charts == "Infant Mortality Rate") &
-       (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
-         plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2_cd116, as.integer(RACEHISP) != 2, as.integer(RACEHISP) < 6, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
-=======
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_imr_race(filter(CI_estim_rate_imr_add_fast_charts, RACEHISP!="Non-Hispanic White"), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
         (input$Displayed == "Absolute Disparities") &
         (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
           plot_imr_race(filter(CI_estim_rate_imr_add_fast_cd116, RACEHISP!="Non-Hispanic White", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
->>>>>>> Stashed changes
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates") &
@@ -354,25 +334,14 @@ server <- function(input, output, session) {
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities") &
-<<<<<<< Updated upstream
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byRaceSexCD_absDisparity_2, as.integer(RACE) != 1, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
-    if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
-       (input$Subgroup == "Race") &
-       (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byRaceSexCD_absDisparity_2_cd116, as.integer(RACE) != 1, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
-    if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
-=======
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_dod(filter(CI_estim_rate_dod_race_add, RACE!="White"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
-        (input$Subgroup == "Race") &
-        (input$Displayed == "Absolute Disparities") &
-        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-          plot_dod(filter(CI_estim_rate_dod_race_add_cd116, RACE!="White", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
-    if((input$Measure_Charts == "Deaths of Despair Mortality Rate") & 
->>>>>>> Stashed changes
+       (input$Subgroup == "Race") &
+       (input$Displayed == "Absolute Disparities") &
+       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
+         plot_dod(filter(CI_estim_rate_dod_race_add_cd116, RACE!="White", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+    if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race (Rolled-Up)") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
          plot_dod(filter(DOD_byRace2SexCD_2, MR > 0), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
@@ -392,17 +361,7 @@ server <- function(input, output, session) {
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Absolute Disparities") &
-<<<<<<< Updated upstream
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byEducSexCD_absDisparity_2, as.integer(EDUC) != 4, as.integer(EDUC) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
-    if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
-       (input$Subgroup == "Education") &
-       (input$Displayed == "Absolute Disparities") &
-       (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byEducSexCD_absDisparity_2_cd116, as.integer(EDUC) != 4, as.integer(EDUC) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
-    filename
-=======
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
          plot_dod(filter(CI_estim_rate_dod_add_fast_charts, EDUC!="Bachelor/Master/Doctorate/Professional Degree"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
@@ -410,7 +369,6 @@ server <- function(input, output, session) {
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
          plot_dod(filter(CI_estim_rate_dod_add_fast_cd116, EDUC!="Bachelor/Master/Doctorate/Professional Degree", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
      filename
->>>>>>> Stashed changes
   })
 
   output$Sankey <- renderHighchart({
