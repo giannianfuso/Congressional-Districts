@@ -49,7 +49,7 @@ ui <- fluidPage(
                                      inputId = "Measure_Charts", label = "Select a measure"),
                          selectInput(choices = c("111 - 112 (2010 - 2012)", "113 - 114 (2013 - 2015)", "116 (2019 - 2020)*"), 
                                      inputId = "Congress_Charts", label = "Select a congress"),
-                         selectInput(choices = NULL, inputId = "Displayed", label = "Values displayed"),
+                         selectInput(choices = c("Mortality Rates", "Absolute Disparities"), inputId = "Displayed", label = "Values displayed"),
                          selectInput(choices = NULL, inputId = "Subgroup", label = "Select a subgrouping**"),
                          selectInput(choices = NULL, inputId = "AgeGroup", label = "Select an age group"),
                          h6("* When 116 (2019 - 2020) is selected as the congress boundary, the charts show the selected measures 
@@ -278,20 +278,6 @@ server <- function(input, output, session) {
       input$Measure_Charts == "Deaths of Despair Mortality Rate" ~ list(c("25 to 34 years", "35 to 44 years", "45 to 64 years")))
     updateSelectInput(inputId = "AgeGroup", choices =  unlist(choices_list_ageGroup))
     
-  })
-  
-  
-  displayed <- reactive({
-    choices <- c("Mortality Rates", "Absolute Disparities")
-    #   case_when(
-    #   input$Subgroup == "Race (Rolled-Up)" ~ c("Mortality Rates"),
-    #   TRUE ~ c("Mortality Rates", "Absolute Disparities")
-    # )
-  })
-  
-  observeEvent(displayed(), {
-    choices <- displayed()
-    updateSelectInput(inputId = "Displayed", choices = choices)
   })
   
   
