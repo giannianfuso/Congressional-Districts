@@ -260,6 +260,7 @@ server <- function(input, output, session) {
   
   # Charts Input updater----
   
+  ## Subgroup + AgeGroup -----
   toListen_subgroup <- reactive({list(input$Measure_Charts,input$Displayed) })
   observeEvent(toListen_subgroup(), {
     req(input$Measure_Charts )
@@ -278,6 +279,19 @@ server <- function(input, output, session) {
       input$Measure_Charts == "Deaths of Despair Mortality Rate" ~ list(c("25 to 34 years", "35 to 44 years", "45 to 64 years")))
     updateSelectInput(inputId = "AgeGroup", choices =  unlist(choices_list_ageGroup))
     
+  })
+  
+  ## Display -----
+  observeEvent(input$Subgroup, {
+    req(input$Displayed )
+    req(input$Subgroup )
+    
+    if (input$Subgroup == "Race (Rolled-Up)") {
+      updateSelectInput(inputId = "Displayed", choices =  c("Mortality Rates"), selected = input$Displayed)
+    } else {
+      updateSelectInput(inputId = "Displayed", choices =  c("Mortality Rates", "Absolute Disparities"), selected = input$Displayed)
+    }
+ 
   })
   
   
