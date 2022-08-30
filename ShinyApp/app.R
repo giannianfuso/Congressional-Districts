@@ -171,7 +171,7 @@ server <- function(input, output, session) {
                 #values = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR),
                 values = IMR_Maps_byCD_2$IMR,
                 title = "IMR, per 1,000 <br> Live Births", opacity = 1,
-                labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)}))
+                labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)},suffix=".0"))
         #values = as.numeric(filter(IMR_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$IMR),
     
     imr_popup_cd116 <- paste0("<strong>", IMR_Maps_cd116$CD, 
@@ -195,7 +195,7 @@ server <- function(input, output, session) {
 
                 title = "IMR, per 1,000 <br> Live Births",
                 opacity = 1,
-                labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
+                labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE),suffix=".0"))
     
     dod_popup <- paste0("<strong>", filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$CD, 
                         "</strong>", "<br><strong>DOD Mortality Rate: </strong>", 

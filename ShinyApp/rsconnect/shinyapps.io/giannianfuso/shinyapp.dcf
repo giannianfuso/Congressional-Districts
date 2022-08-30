@@ -5,9 +5,9 @@ account: giannianfuso
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6230715
-bundleId: 6179612
+bundleId: 6253092
 url: https://giannianfuso.shinyapps.io/shinyapp/
-when: 1659966398.97155
-lastSyncTime: 1659966398.97156
+when: 1661890812.6475
+lastSyncTime: 1661890812.64751
 asMultiple: FALSE
 asStatic: FALSE
