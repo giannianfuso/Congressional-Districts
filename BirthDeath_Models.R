@@ -363,8 +363,8 @@ CI_estim_rate_dod_add_fast_cd116<-education_DOD_cd116%>%
   }) %>%
   filter(names!="(Intercept)", names!="pop", names!="EDUCUnknown:pop")%>%
   mutate(EDUC=substring(names,5,nchar(names)-4), paired=as.integer(CD))%>%
-  rename(MR_absDisparity=coef)%>%
-  select(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC, MR_absDisparity, paired)
+  rename(MR=coef)%>%
+  select(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC, MR, paired)
 
 #Save for charts
 save(CI_estim_rate_dod_add_fast_cd116, file = "./ShinyApp/CI_estim_rate_dod_add_fast_cd116.Rdata")
