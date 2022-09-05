@@ -16,8 +16,7 @@ select <- dplyr::select
 #test Poisson vs Negative binomial
 #rename dataset to make easier to use
 race_IMR<-IMR_byCD_byRace_2_details%>%
-  mutate(im=as.integer(InfantMortality))%>%
-  filter(im>0)
+  mutate(im=as.integer(InfantMortality))
 
 hist(race_IMR$InfantMortality)
 summary(race_IMR$InfantMortality)
@@ -155,8 +154,7 @@ write.csv(abs_disp_imr, "Final Results/abs_disp_imr.csv", row.names = F)
 
 #rename dataset to make easier to use
 race_IMR_cd116<-IMR_byCD_byRace_2_cd116_details%>%
-  mutate(im=as.integer(InfantMortality))%>%
-  filter(im>0)
+  mutate(im=as.integer(InfantMortality))
 
 CI_estim_rate_imr_add_fast_cd116<-race_IMR_cd116%>%
   group_by(CONGRESS2, CD)%>%
@@ -204,8 +202,7 @@ abs_disp_imr_cd116<-CI_estim_rate_imr_add_fast_cd116%>%
 education_DOD<-DOD_byEducSexCD_2_details %>%
   mutate(DOD = as.integer(DOD),
          EDUC = factor(EDUC, levels = c("Bachelor/Master/Doctorate/Professional Degree", "Less than High School", 
-                          "High School", "Some College/Associate Degree", "Unknown")))%>%
-  filter(DOD>0)
+                          "High School", "Some College/Associate Degree", "Unknown")))
 
 hist(education_DOD$DOD)
 summary(education_DOD$DOD)
@@ -346,8 +343,7 @@ write.csv(abs_disp_dod_educ, "Final Results/abs_disp_dod_educ.csv", row.names = 
 education_DOD_cd116<-DOD_byEducSexCD_2_cd116_orig %>%
   mutate(DOD = as.integer(DOD),
          EDUC = factor(EDUC, levels = c("Bachelor/Master/Doctorate/Professional Degree", "Less than High School", 
-                                        "High School", "Some College/Associate Degree", "Unknown")))%>%
-  filter(DOD>0)
+                                        "High School", "Some College/Associate Degree", "Unknown")))
 
 #Regression
 CI_estim_rate_dod_add_fast_cd116<-education_DOD_cd116%>%
@@ -375,8 +371,7 @@ save(CI_estim_rate_dod_add_fast_cd116, file = "./ShinyApp/CI_estim_rate_dod_add_
 
 #Rename
 race_DOD<-DOD_byRaceSexCD_2_details %>%
-  mutate(DOD = as.integer(DOD))%>%
-  filter(DOD>0)
+  mutate(DOD = as.integer(DOD))
 
 #Regression by Race
 CI_estim_rate_dod_race_add<-race_DOD%>%
@@ -401,8 +396,7 @@ save(CI_estim_rate_dod_race_add, file = "./ShinyApp/CI_estim_rate_dod_race_add.R
 
 #Rename
 race_DOD_cd116<-DOD_byRaceSexCD_2_cd116_details %>%
-  mutate(DOD = as.integer(DOD))%>%
-  filter(DOD>0)
+  mutate(DOD = as.integer(DOD))
 
 #Regression by Race - cd116
 CI_estim_rate_dod_race_add_cd116<-race_DOD_cd116%>%
