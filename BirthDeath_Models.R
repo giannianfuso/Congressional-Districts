@@ -43,7 +43,7 @@ str(race_IMR)
 CI_estim_imr<-race_IMR%>%
   group_by(CONGRESS2, CD)%>%
   group_modify(~{
-    mod_test_im<-glm(InfantMortality~RACEHISP+offset(log(LiveBirths/1000)),family="poisson", data=.x)%>%tidy
+    mod_test_im<-glm(im~RACEHISP+offset(log(LiveBirths/1000)),family="poisson", data=.x)%>%tidy
   })
 
 rel_disp_imr_noCI<-CI_estim_imr%>%
@@ -64,9 +64,9 @@ rel_disp_imr_noCI<-CI_estim_imr%>%
 write.csv(rel_disp_imr_noCI, "Final Results/rel_disp_imr_noCI.csv", row.names = F)
 
 rel_disp_imr<-CI_estim_imr%>%
-  mutate(lci=format(round(exp(estimate-1.96*std.error),2),nsmall=2),
-         uci=format(round(exp(estimate+1.96*std.error),2),nsmall=2),
-         exp_est=format(round(exp(estimate),2),nsmall=2))%>%
+  mutate(lci=str_trim(format(round(exp(estimate-1.96*std.error),2),nsmall=2),side = "both"),
+         uci=str_trim(format(round(exp(estimate+1.96*std.error),2),nsmall=2),side = "both"),
+         exp_est=str_trim(format(round(exp(estimate),2),nsmall=2),side = "both"))%>%
   select(CONGRESS2, CD, term, exp_est, lci, uci)%>%
   arrange(CONGRESS2, CD)%>%
   mutate(race_ethn=case_when(term=="RACEHISPHispanic" ~"H",
@@ -126,9 +126,9 @@ abs_disp_imr_noCI<-CI_estim_rate_imr_add_fast%>%
 write.csv(abs_disp_imr_noCI, "Final Results/abs_disp_imr_noCI.csv", row.names = F)
 
 abs_disp_imr<-CI_estim_rate_imr_add_fast%>%
-  mutate(lci=format(round(coef-1.96*se,2),nsmall=2),
-         uci=format(round(coef+1.96*se,2),nsmall=2),
-         est=format(round(coef,2),nsmall=2))%>%
+  mutate(lci=str_trim(format(round(coef-1.96*se,2),nsmall=2),side="both"),
+         uci=str_trim(format(round(coef+1.96*se,2),nsmall=2),side="both"),
+         est=str_trim(format(round(coef,2),nsmall=2),side="both"))%>%
   select(CONGRESS2, CD, names, est, lci, uci)%>%
   arrange(CONGRESS2, CD)%>%
   mutate(race_ethn=case_when(names=="RACEHISPHispanic:pop" ~"H",
@@ -199,7 +199,7 @@ abs_disp_imr_cd116<-CI_estim_rate_imr_add_fast_cd116%>%
 #DOD MR by Education
 #test Poisson vs Negative binomial
 #rename dataset to make easier to use
-education_DOD<-DOD_byEducSexCD_2_details %>%
+education_DOD<-DOD_byEducCD_2_details %>%
   mutate(DOD = as.integer(DOD),
          EDUC = factor(EDUC, levels = c("Bachelor/Master/Doctorate/Professional Degree", "Less than High School", 
                           "High School", "Some College/Associate Degree", "Unknown")))
@@ -228,7 +228,7 @@ confint(mod_test_dod)
 table(education_DOD$EDUC)
 
 CI_estim_rate_dod<-education_DOD%>%
-  group_by(CONGRESS2, CD, AGE_CAT_EDUC, SEX)%>%
+  group_by(CONGRESS2, CD, AGE_CAT_EDUC)%>%
   group_modify(~{
     mod_test_dod<-glm(DOD~EDUC + 
                         offset(log(Population/10000)), family="poisson", data=.x)%>%tidy
@@ -236,25 +236,26 @@ CI_estim_rate_dod<-education_DOD%>%
 
 rel_disp_educ_noCI<-CI_estim_rate_dod%>%
   mutate(exp_est=format(round(exp(estimate),2),nsmall = 2)) %>%
-  select(CONGRESS2, CD, AGE_CAT_EDUC, SEX, term, exp_est)%>%
-  arrange(AGE_CAT_EDUC, SEX, CONGRESS2, CD)%>%
+  select(CONGRESS2, CD, AGE_CAT_EDUC, term, exp_est)%>%
+  arrange(AGE_CAT_EDUC, CONGRESS2, CD)%>%
   mutate(educ=case_when(term=="EDUCLess than High School" ~"LHS",
                         term=="EDUCHigh School"~"HS",
                         term=="EDUCSome College/Associate Degree"~"SCAD"))%>%
   filter(!term%in%c("(Intercept)"))%>%
   select(-term)%>%
   pivot_wider(names_from=educ, values_from=c(exp_est)) %>%
-  pivot_wider(names_from = CONGRESS2, values_from = c(LHS, HS, SCAD))
+  pivot_wider(names_from = CONGRESS2, values_from = c(LHS, HS, SCAD)) %>%
+  relocate(1,2,3,5,7,4,6,8)
 
 #write to csv
 write.csv(rel_disp_educ_noCI, "Final Results/rel_disp_educ_noCI.csv", row.names = F)
 
 rel_disp_educ<-CI_estim_rate_dod%>%
-  mutate(lci=format(round(exp(estimate-1.96*std.error),2),nsmall = 2),
-         uci=format(round(exp(estimate+1.96*std.error),2),nsmall = 2),
-         exp_est=format(round(exp(estimate),2),nsmall = 2)) %>%
-  select(CONGRESS2, CD, AGE_CAT_EDUC, SEX, term, exp_est, lci, uci)%>%
-  arrange(AGE_CAT_EDUC, SEX, CONGRESS2, CD)%>%
+  mutate(lci=str_trim(format(round(exp(estimate-1.96*std.error),2),nsmall = 2),side = "both"),
+         uci=str_trim(format(round(exp(estimate+1.96*std.error),2),nsmall = 2),side = "both"),
+         exp_est=str_trim(format(round(exp(estimate),2),nsmall = 2),side = "both")) %>%
+  select(CONGRESS2, CD, AGE_CAT_EDUC, term, exp_est, lci, uci)%>%
+  arrange(AGE_CAT_EDUC, CONGRESS2, CD)%>%
   mutate(educ=case_when(term=="EDUCLess than High School" ~"LHS",
                              term=="EDUCHigh School"~"HS",
                              term=="EDUCSome College/Associate Degree"~"SCAD"))%>%
@@ -266,13 +267,13 @@ rel_disp_educ<-CI_estim_rate_dod%>%
   mutate(output = paste0(output, ")"))%>%
   pivot_wider(names_from=educ, values_from=c(output)) %>%
   pivot_wider(names_from = CONGRESS2, values_from = c(LHS, HS, SCAD))%>%
-  relocate(2,3,1,4,6,8,5,7,9)
+  relocate(1,2,3,5,7,4,6,8)
 
 #write to csv
 write.csv(rel_disp_educ, "Final Results/rel_disp_educ.csv", row.names = F)
 
 CI_estim_rate_dod_add_fast<-education_DOD%>%
-  group_by(CONGRESS2, CD, AGE_CAT_EDUC, SEX)%>%
+  group_by(CONGRESS2, CD, AGE_CAT_EDUC)%>%
   group_modify(~{
     pop<-.x$Population/10000
     x<-model.matrix(DOD~EDUC:pop+pop, data = .x)
@@ -288,13 +289,13 @@ CI_estim_rate_dod_add_fast<-education_DOD%>%
 CI_estim_rate_dod_add_fast_charts <- CI_estim_rate_dod_add_fast %>%
   mutate(EDUC=substring(names,5,nchar(names)-4), paired = as.integer(CD))%>%
   rename(MR=coef)%>%
-  select(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC, MR, paired)
+  select(CD, CONGRESS2, EDUC, AGE_CAT_EDUC, MR, paired)
 
 #Save for charts
 save(CI_estim_rate_dod_add_fast_charts, file = "./ShinyApp/CI_estim_rate_dod_add_fast_charts.Rdata")
 
 CI_estim_rate_dod_add_fast_AIC<-education_DOD%>%
-  group_by(CONGRESS2, CD, AGE_CAT_EDUC, SEX)%>%
+  group_by(CONGRESS2, CD, AGE_CAT_EDUC)%>%
   group_modify(~{
     pop<-.x$Population/10000
     x<-model.matrix(DOD~EDUC:pop+pop, data = .x)
@@ -304,25 +305,25 @@ CI_estim_rate_dod_add_fast_AIC<-education_DOD%>%
 
 abs_disp_dod_noCI<-CI_estim_rate_dod_add_fast%>%
   mutate(est=format(round(coef,2),nsmall = 2)) %>%
-  select(CONGRESS2, CD, AGE_CAT_EDUC, SEX, names, est)%>%
-  arrange(AGE_CAT_EDUC, SEX, CONGRESS2, CD)%>%
+  select(CONGRESS2, CD, AGE_CAT_EDUC, names, est)%>%
+  arrange(AGE_CAT_EDUC, CONGRESS2, CD)%>%
   mutate(educ=case_when(names=="EDUCLess than High School:pop" ~"LHS",
                         names=="EDUCHigh School:pop"~"HS",
                         names=="EDUCSome College/Associate Degree:pop"~"SCAD"))%>%
   select(-names)%>%
   pivot_wider(names_from=educ, values_from=c(est)) %>%
   pivot_wider(names_from = CONGRESS2, values_from = c(LHS, HS, SCAD))%>%
-  relocate(2,3,1,4,6,8,5,7,9)
+  relocate(1,2,3,5,7,4,6,8)
 
 #write to csv
 write.csv(abs_disp_dod_noCI, "Final Results/abs_disp_dod_noCI.csv", row.names = F)
 
 abs_disp_dod_educ<-CI_estim_rate_dod_add_fast%>%
-  mutate(lci=format(round(coef-1.96*se,2),nsmall = 2),
-         uci=format(round(coef+1.96*se,2),nsmall = 2),
-         est=format(round(coef,2),nsmall = 2)) %>%
-  select(CONGRESS2, CD, AGE_CAT_EDUC, SEX, names, est, lci, uci)%>%
-  arrange(AGE_CAT_EDUC, SEX, CONGRESS2, CD)%>%
+  mutate(lci=str_trim(format(round(coef-1.96*se,2),nsmall = 2),side = "both"),
+         uci=str_trim(format(round(coef+1.96*se,2),nsmall = 2),side = "both"),
+         est=str_trim(format(round(coef,2),nsmall = 2),side = "both")) %>%
+  select(CONGRESS2, CD, AGE_CAT_EDUC, names, est, lci, uci)%>%
+  arrange(AGE_CAT_EDUC, CONGRESS2, CD)%>%
   mutate(educ=case_when(names=="EDUCLess than High School:pop" ~"LHS",
                         names=="EDUCHigh School:pop"~"HS",
                         names=="EDUCSome College/Associate Degree:pop"~"SCAD"))%>%
@@ -333,21 +334,21 @@ abs_disp_dod_educ<-CI_estim_rate_dod_add_fast%>%
   mutate(output = paste0(output, ")"))%>%
   pivot_wider(names_from=educ, values_from=c(output)) %>%
   pivot_wider(names_from = CONGRESS2, values_from = c(LHS, HS, SCAD))%>%
-  relocate(2,3,1,4,6,8,5,7,9)
+  relocate(1,2,3,5,7,4,6,8)
 
 #write to csv
 write.csv(abs_disp_dod_educ, "Final Results/abs_disp_dod_educ.csv", row.names = F)
 ################################################################################
 
 #DOD by education - cd116
-education_DOD_cd116<-DOD_byEducSexCD_2_cd116_orig %>%
+education_DOD_cd116<-DOD_byEducCD_2_cd116 %>%
   mutate(DOD = as.integer(DOD),
          EDUC = factor(EDUC, levels = c("Bachelor/Master/Doctorate/Professional Degree", "Less than High School", 
                                         "High School", "Some College/Associate Degree", "Unknown")))
 
 #Regression
 CI_estim_rate_dod_add_fast_cd116<-education_DOD_cd116%>%
-  group_by(CONGRESS2, CD, AGE_CAT_EDUC, SEX)%>%
+  group_by(CONGRESS2, CD, AGE_CAT_EDUC)%>%
   group_modify(~{
     pop<-.x$Population/10000
     x<-model.matrix(DOD~EDUC:pop+pop, data = .x)
@@ -360,7 +361,7 @@ CI_estim_rate_dod_add_fast_cd116<-education_DOD_cd116%>%
   filter(names!="(Intercept)", names!="pop", names!="EDUCUnknown:pop")%>%
   mutate(EDUC=substring(names,5,nchar(names)-4), paired=as.integer(CD))%>%
   rename(MR=coef)%>%
-  select(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC, MR, paired)
+  select(CD, CONGRESS2, EDUC, AGE_CAT_EDUC, MR, paired)
 
 #Save for charts
 save(CI_estim_rate_dod_add_fast_cd116, file = "./ShinyApp/CI_estim_rate_dod_add_fast_cd116.Rdata")
@@ -370,12 +371,12 @@ save(CI_estim_rate_dod_add_fast_cd116, file = "./ShinyApp/CI_estim_rate_dod_add_
 #DOD by Race
 
 #Rename
-race_DOD<-DOD_byRaceSexCD_2_details %>%
+race_DOD<-DOD_byRaceCD_2_details %>%
   mutate(DOD = as.integer(DOD))
 
 #Regression by Race
 CI_estim_rate_dod_race_add<-race_DOD%>%
-  group_by(CONGRESS2, CD, AGE_CAT_EDUC, SEX)%>%
+  group_by(CONGRESS2, CD, AGE_CAT_EDUC)%>%
   group_modify(~{
     pop<-.x$Population/10000
     x<-model.matrix(DOD~RACE:pop+pop, data = .x)
@@ -385,7 +386,7 @@ CI_estim_rate_dod_race_add<-race_DOD%>%
   filter(names!="(Intercept)", names!="pop", names!="RACEOther:pop", names != "RACEAmerican Indian, Alaska Native:pop") %>%
   mutate(RACE=substring(names,5,nchar(names)-4), paired = as.integer(CD))%>%
   rename(MR=coef)%>%
-  select(CD, CONGRESS2, RACE, AGE_CAT_EDUC, SEX, MR, paired)
+  select(CD, CONGRESS2, RACE, AGE_CAT_EDUC, MR, paired)
 
 #Save as R Object
 save(CI_estim_rate_dod_race_add, file = "./ShinyApp/CI_estim_rate_dod_race_add.Rdata")
@@ -395,12 +396,12 @@ save(CI_estim_rate_dod_race_add, file = "./ShinyApp/CI_estim_rate_dod_race_add.R
 #DOD by Race - cd116
 
 #Rename
-race_DOD_cd116<-DOD_byRaceSexCD_2_cd116_details %>%
+race_DOD_cd116<-DOD_byRaceCD_2_cd116_details %>%
   mutate(DOD = as.integer(DOD))
 
 #Regression by Race - cd116
 CI_estim_rate_dod_race_add_cd116<-race_DOD_cd116%>%
-  group_by(CONGRESS2, CD, AGE_CAT_EDUC, SEX)%>%
+  group_by(CONGRESS2, CD, AGE_CAT_EDUC)%>%
   group_modify(~{
     pop<-.x$Population/10000
     x<-model.matrix(DOD~RACE:pop+pop, data = .x)
@@ -410,7 +411,7 @@ CI_estim_rate_dod_race_add_cd116<-race_DOD_cd116%>%
   filter(names!="(Intercept)", names!="pop", names!="RACEOther:pop", names != "RACEAmerican Indian, Alaska Native:pop") %>%
   mutate(RACE=substring(names,5,nchar(names)-4), paired = as.integer(CD))%>%
   rename(MR=coef)%>%
-  select(CD, CONGRESS2, RACE, AGE_CAT_EDUC, SEX, MR, paired)
+  select(CD, CONGRESS2, RACE, AGE_CAT_EDUC, MR, paired)
 
 #Save as R Object
 save(CI_estim_rate_dod_race_add_cd116, file = "./ShinyApp/CI_estim_rate_dod_race_add_cd116.Rdata")

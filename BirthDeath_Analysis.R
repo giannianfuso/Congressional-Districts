@@ -391,8 +391,18 @@ DOD_byRaceSexCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, SEX, RACE, AGE_CAT
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
+#Combined congresses - no sex
+DOD_byRaceCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
+  filter(as.integer(RACE)!=3) #Remove american indian alaksa native
+
 #DOD - cd116
 DOD_byRaceSexCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
+  filter(as.integer(RACE)!=3) #Remove american indian alaksa native
+
+#DOD - cd116 - no sex
+DOD_byRaceCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
@@ -427,6 +437,12 @@ DOD_byRaceSexCD_2_details <- left_join(DOD_byRaceSexCD_deaths_2, population_byRa
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3)
 
+#Mortality Rates - Combined congresses - with details - no sex
+DOD_byRaceCD_2_details <- inner_join(DOD_byRaceCD_deaths_2, population_byRaceAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, AGE_CAT_EDUC, RACE) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD))
+
 #Sensitivity analysis -- original method of pulling population
 DOD_byRaceSexCD_2_orig <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2_orig) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
@@ -453,6 +469,13 @@ save(DOD_byRaceSexCD_2_cd116, file = "./ShinyApp/DOD_byRaceSexCD_2_cd116.Rdata")
 #Mortality Rates - cd116 - with details
 DOD_byRaceSexCD_2_cd116_details <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population), as.integer(RACE)!=3)
+
+#Mortality Rates - cd116 - with details - no sex
+DOD_byRaceCD_2_cd116_details <- left_join(DOD_byRaceCD_deaths_2_cd116, population_byRaceAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3)
@@ -577,8 +600,15 @@ DOD_byEducSexCD_deaths <- group_by(death_cd, CD, CONGRESS, SEX, EDUC, AGE_CAT_ED
 DOD_byEducSexCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
+#no sex
+DOD_byEducCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
+
 #cd116 boundaries
 DOD_byEducSexCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
+
+DOD_byEducCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
 DOD_byEducSexCD <- left_join(DOD_byEducSexCD_deaths, population_byEducSexAgeCD_byCongress) %>%
@@ -604,6 +634,12 @@ DOD_byEducSexCD_2_details <- left_join(DOD_byEducSexCD_deaths_2, population_byEd
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population))
 
+#Combined congress - with details - no sex
+DOD_byEducCD_2_details <- inner_join(DOD_byEducCD_deaths_2, population_byEducAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, AGE_CAT_EDUC, EDUC) %>%
+  summarise(DOD = sum(DOD), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD))
+
 #Sensitivity analysis - original population pull
 DOD_byEducSexCD_2_orig <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2_orig) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
@@ -620,6 +656,13 @@ save(DOD_byEducSexCD_2, file = "./ShinyApp/DOD_byEducSexCD_2.Rdata")
 #CD116
 DOD_byEducSexCD_2_cd116_orig <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
+  filter(!is.na(Population))
+
+#CD116 - no sex
+DOD_byEducCD_2_cd116 <- inner_join(DOD_byEducCD_deaths_2_cd116, population_byEducAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
@@ -662,6 +705,11 @@ DOD_byEducSexCD_college_2 <- inner_join(DOD_byEducSexCD_deaths_college_2, popula
   mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
+#Combined congress - no sex
+DOD_byEducCD_college_2 <- DOD_byEducCD_2_details %>%
+  filter(as.integer(EDUC)==4) %>%
+  rename(MR_college = MR)
+
 #Cd116
 DOD_byEducSexCD_college_2_cd116 <- inner_join(DOD_byEducSexCD_deaths_college_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
@@ -688,6 +736,15 @@ DOD_byEducSexCD_absDisparity_2 <- full_join(DOD_byEducSexCD_2,
 #Save as R Object
 save(DOD_byEducSexCD_absDisparity_2, file = "./ShinyApp/DOD_byEducSexCD_absDisparity_2.Rdata")
 
+#Absolute disparities - no sex
+DOD_byEducCD_absDisparity_2 <- full_join(DOD_byEducCD_2_details, 
+                                         DOD_byEducCD_college_2,
+                                         c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
+  mutate(MR_absDisparity = (MR-MR_college), paired = as.integer(CD)) %>%
+  rename(EDUC = "EDUC.x") %>%
+  select(-c(DOD.x, Population.x, MR, EDUC.y, Population.y, MR_college, paired.y, DOD.y, paired.x)) %>%
+  filter(as.integer(EDUC)!=4)
+
 #Relative disparities
 DOD_byEducSexCD_relDisparity_2 <- full_join(DOD_byEducSexCD_2, 
                                             DOD_byEducSexCD_college_2,
@@ -695,6 +752,15 @@ DOD_byEducSexCD_relDisparity_2 <- full_join(DOD_byEducSexCD_2,
   mutate(MR_relDisparity = (MR/MR_college), paired = as.integer(CD)) %>%
   select(-c("EDUC.y", "DOD", "Population")) %>%
   rename(EDUC = "EDUC.x")
+
+#Relative disparities - no sex
+DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details, 
+                                            DOD_byEducCD_college_2,
+                                            c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
+  mutate(MR_relDisparity = (MR/MR_college), paired = as.integer(CD)) %>%
+  rename(EDUC = "EDUC.x") %>%
+  select(-c(DOD.x, Population.x, MR, EDUC.y, Population.y, MR_college, paired.y, DOD.y, paired.x)) %>%
+  filter(as.integer(EDUC)!=4)
 
 #Combined congress - cd116
 DOD_byEducSexCD_absDisparity_2_cd116 <- full_join(DOD_byEducSexCD_2_cd116, 
@@ -748,6 +814,44 @@ DOD_byEducSexCD_absDisparity_2_table <- DOD_byEducSexCD_absDisparity_2 %>%
 #Write to csv
 write.csv(DOD_byEducSexCD_absDisparity_2_table, "./Final Results/DOD_byEducSexCD_absDisparity_2_table.csv", row.names = FALSE)
 
+#Create table for paper - no sex
+DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
+  filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
+  mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+           str_replace_all("Less than High School", "LHS") %>%
+           str_replace_all("High School", "HS") %>%
+           str_replace_all("Some College/Associate Degree", "SCAD") %>%
+           str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
+  pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_absDisparity, values_fill = 0) %>%
+  ungroup() %>%
+  select(-c(CONGRESS2, EDUC, paired)) %>%
+  group_by(CD, AGE_CAT_EDUC) %>%
+  summarise_all(sum) %>%
+  arrange(AGE_CAT_EDUC, CD) %>%
+  bind_cols({
+    DOD_byEducCD_absDisparity_2 %>%
+      filter(as.integer(CONGRESS2) == 2, as.integer(EDUC) < 4) %>%
+      mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+               str_replace_all("Less than High School", "LHS") %>%
+               str_replace_all("High School", "HS") %>%
+               str_replace_all("Some College/Associate Degree", "SCAD") %>%
+               str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
+      pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_absDisparity, values_fill = 0) %>%
+      ungroup() %>%
+      select(-c(CONGRESS2, EDUC, paired)) %>%
+      add_row(CD = "CD 19", AGE_CAT_EDUC = "25 to 34 years") %>%
+      add_row(CD = "CD 19", AGE_CAT_EDUC = "35 to 44 years") %>%
+      add_row(CD = "CD 19", AGE_CAT_EDUC = "45 to 64 years") %>%
+      group_by(CD, AGE_CAT_EDUC) %>%
+      summarise_all(sum) %>%
+      arrange(AGE_CAT_EDUC, CD) %>%
+      ungroup() %>%
+      select(-c(CD, AGE_CAT_EDUC))
+  })
+
+#Write to csv
+write.csv(DOD_byEducCD_absDisparity_2_table, "./Final Results/DOD_byEducCD_absDisparity_2_table.csv", row.names = FALSE)
+
 #Create table for paper - relative disparity
 DOD_byEducSexCD_relDisparity_2_table <- DOD_byEducSexCD_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
@@ -788,6 +892,44 @@ DOD_byEducSexCD_relDisparity_2_table <- DOD_byEducSexCD_relDisparity_2 %>%
 
 #Write to csv
 write.csv(DOD_byEducSexCD_relDisparity_2_table, "./Final Results/DOD_byEducSexCD_relDisparity_2_table.csv", row.names = FALSE)
+
+#Create table for paper - relative disparity - no sex
+DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
+  filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
+  mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+           str_replace_all("Less than High School", "LHS") %>%
+           str_replace_all("High School", "HS") %>%
+           str_replace_all("Some College/Associate Degree", "SCAD") %>%
+           str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
+  pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_relDisparity, values_fill = 0) %>%
+  ungroup() %>%
+  select(-c(paired, CONGRESS2, EDUC)) %>%
+  group_by(CD, AGE_CAT_EDUC) %>%
+  summarise_all(sum) %>%
+  arrange(AGE_CAT_EDUC, CD) %>%
+  bind_cols({
+    DOD_byEducCD_relDisparity_2 %>%
+      filter(as.integer(CONGRESS2) == 2, as.integer(EDUC) < 4) %>%
+      mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+               str_replace_all("Less than High School", "LHS") %>%
+               str_replace_all("High School", "HS") %>%
+               str_replace_all("Some College/Associate Degree", "SCAD") %>%
+               str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
+      pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_relDisparity, values_fill = 0) %>%
+      ungroup() %>%
+      select(-c(paired, CONGRESS2, EDUC)) %>%
+      add_row(CD = "CD 19", AGE_CAT_EDUC = "25 to 34 years") %>%
+      add_row(CD = "CD 19", AGE_CAT_EDUC = "35 to 44 years") %>%
+      add_row(CD = "CD 19", AGE_CAT_EDUC = "45 to 64 years") %>%
+      group_by(CD, AGE_CAT_EDUC) %>%
+      summarise_all(sum) %>%
+      arrange(AGE_CAT_EDUC, CD) %>%
+      ungroup() %>%
+      select(-c(CD, AGE_CAT_EDUC))
+  })
+
+#Write to csv
+write.csv(DOD_byEducCD_relDisparity_2_table, "./Final Results/DOD_byEducCD_relDisparity_2_table.csv", row.names = FALSE)
 
 ################################################################################
 

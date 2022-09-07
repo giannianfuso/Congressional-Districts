@@ -37,7 +37,6 @@ plot_dod = function(data, colors, Congress_Charts_tmp, Subgroup_tmp, Displayed_t
              xlab("Congressional District") +
              ylab(axis_title) +
              labs(color = Subgroup_tmp) +
-             facet_wrap(~ SEX) +
              theme_bw() +
              theme(plot.title = element_text(hjust = 0.5), axis.title = element_text(size = 15), axis.text = element_text(size = 10),
                    axis.title.y = element_text(margin = margin(t = 0, r = 5, b = 0, l = 0)), 

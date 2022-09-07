@@ -724,6 +724,11 @@ population_byRaceSexAgeCD_byCongress2 <- population_byRaceSexAgeCD %>%
   group_by(CD, SEX, RACE, AGE_CAT_EDUC, CONGRESS2) %>%
   summarise(Population = sum(Population, na.rm = TRUE))
 
+#no sex
+population_byRaceAgeCD_byCongress2 <- population_byRaceSexAgeCD_byCongress2 %>%
+  group_by(CD, RACE, AGE_CAT_EDUC, CONGRESS2) %>%
+  summarise(Population = sum(Population, na.rm = TRUE))
+
 population_byRaceSexAgeCD_byCongress2_orig <- population_byRaceSexAgeCD_orig %>%
   group_by(CD, SEX, RACE, AGE_CAT_EDUC, CONGRESS2) %>%
   summarise(Population = sum(Population, na.rm = TRUE))
@@ -865,6 +870,11 @@ population_byEducSexAgeCD_byCongress <- population_byEducSexAgeCD %>%
 
 population_byEducSexAgeCD_byCongress2 <- group_by(population_byEducSexAgeCD, CD, SEX, 
                                                   EDUC, AGE_CAT_EDUC, CONGRESS2) %>%
+  summarise(Population = sum(Population, na.rm = TRUE))
+
+#no sex
+population_byEducAgeCD_byCongress2 <- population_byEducSexAgeCD_byCongress2 %>%
+  group_by(CD, CONGRESS2, AGE_CAT_EDUC, EDUC) %>%
   summarise(Population = sum(Population, na.rm = TRUE))
 
 population_byEducSexAgeCD_byCongress2_orig <- group_by(population_byEducSexAgeCD_orig, CD, SEX, 
