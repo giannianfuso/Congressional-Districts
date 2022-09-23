@@ -341,7 +341,7 @@ write.csv(abs_disp_dod_educ, "Final Results/abs_disp_dod_educ.csv", row.names = 
 ################################################################################
 
 #DOD by education - cd116
-education_DOD_cd116<-DOD_byEducCD_2_cd116 %>%
+education_DOD_cd116<-DOD_byEducCD_2_cd116_details %>%
   mutate(DOD = as.integer(DOD),
          EDUC = factor(EDUC, levels = c("Bachelor/Master/Doctorate/Professional Degree", "Less than High School", 
                                         "High School", "Some College/Associate Degree", "Unknown")))

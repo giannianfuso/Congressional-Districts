@@ -144,6 +144,27 @@ death2015 <- fread(paste0(dir_name, "deathgeo2015.csv")) %>%
 death_original <- bind_rows(death2010, death2012, death2012, 
                             death2013, death2014, death2015)
 
+#Add despair indicator for deaths
+death_original_despair <- death_original %>%
+  mutate(
+    AGE = case_when(
+      year <= 2011 ~ AGE6011,
+      year >= 2012 ~ AGE1215), 
+    DESPAIR = case_when(
+      #Suicide
+      ((CODICD10 >= "X60" & CODICD10 <= "X84") | (CODICD10 == "Y87.0")) & 
+        (AGE >= 25) & (AGE <= 64) ~ 1,
+      #Chronic liver disease and cirrhosis 
+      ((CODICD10 == "K70") | (CODICD10 == "K73") | (CODICD10 == "K74")) &
+        (AGE >= 25) & (AGE <= 64) ~ 1,
+      #Alcohol and drug poisonings
+      ((CODICD10 >= "X40" & CODICD10 <= "X45") |
+         (CODICD10 >= "Y10" & CODICD10 <= "Y15") |
+         (CODICD10 == "Y45") | (CODICD10 == "Y47") | (CODICD10 == "Y45")) &
+        (AGE >= 25) & (AGE <= 64) ~ 1,
+      TRUE ~ 0)
+  )
+
 ################################################################################
 
 #Crosswalk with Congressional District 111 (2009-2010)

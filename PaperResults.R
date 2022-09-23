@@ -9,7 +9,7 @@ ggsave("./Final Results/figure1.png")
 figure2 <- DOD_Maps_2
 figure2
 ggsave("./Final Results/figure2.pdf", plot = figure2, width = 8.5, height = 11)
-ggsave("./Final Results/figure2.png")
+ggsave("./Final Results/figure2.png", plot = figure2, width = 8.5, height = 11)
 
 #Figure 3 - IMR by race/ethnicity
 figure3 <- IMR_byCD_byRace_Plots_2
@@ -18,7 +18,7 @@ ggsave("./Final Results/figure3.pdf", plot = IMR_byCD_byRace_Plots_2, width = 11
 ggsave("./Final Results/figure3.png", plot = figure3, width = 13, height = 13)
 
 #Figure 4 - DOD by education - faceting by age, sex, and congress, cd111-112
-figure4 <- DOD_byEducSexAge_Plot
+figure4 <- DOD_byEducAge_Plot
 figure4
 ggsave("./Final Results/figure4.pdf", figure4, width = 15, height = 13)
 ggsave("./Final Results/figure4.png", figure4, width = 30, height = 20)

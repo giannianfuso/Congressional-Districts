@@ -110,10 +110,10 @@ server <- function(input, output, session) {
   load(file="CI_estim_rate_imr_add_fast_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race
-  load(file = "DOD_byRaceSexCD_2.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byRaceCD_2.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - cd116
-  load(file = "DOD_byRaceSexCD_2_cd116.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byRaceCD_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - disparities
   #load(file = "DOD_byRaceSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
@@ -124,16 +124,16 @@ server <- function(input, output, session) {
   load(file="CI_estim_rate_dod_race_add_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - rolled up
-  load(file = "DOD_byRace2SexCD_2.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byRace2CD_2.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - rolled up - cd116
-  load(file = "DOD_byRace2SexCD_2_cd116.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byRace2CD_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by education
-  load(file = "DOD_byEducSexCD_2.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byEducCD_2.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by education - cd116
-  load(file = "DOD_byEducSexCD_2_cd116.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byEducCD_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by education - disparities
   #load(file = "DOD_byEducSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
@@ -325,12 +325,12 @@ server <- function(input, output, session) {
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byRaceSexCD_2, MR > 0, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byRaceCD_2, MR > 0, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates") &
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byRaceSexCD_2_cd116, MR > 0, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byRaceCD_2_cd116, MR > 0, as.integer(RACE) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities") &
@@ -344,20 +344,20 @@ server <- function(input, output, session) {
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race (Rolled-Up)") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byRace2SexCD_2, MR > 0), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byRace2CD_2, MR > 0), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race (Rolled-Up)") &
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byRace2SexCD_2_cd116, MR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byRace2CD_2_cd116, MR > 0, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Mortality Rates") &
-       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- plot_dod(filter(DOD_byEducSexCD_2, MR > 0, as.integer(EDUC) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+       (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- plot_dod(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Mortality Rates") &
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(DOD_byEducSexCD_2_cd116, MR > 0, as.integer(EDUC) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byEducCD_2_cd116, MR > 0, as.integer(EDUC) < 5, as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Absolute Disparities") &

@@ -18,6 +18,8 @@ library(sp)
 library(plotly)
 library(dineq)
 library(ggh4x)
+library(classInt)
+library(ggmap)
 select <- dplyr::select
 
 
@@ -40,6 +42,11 @@ color_SomeCollege <- "#0072b2"
 color_Bachelor <- "#f0e442"
 
 ################################################################################
+#Determine what % of all infant mortalities could not be geocoded
+infMort_total <- filter(death_original, INFMORT == 1) %>%
+  mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
+infMort_nogeo <- filter(infMort_total, is.na(GEOID10) | char < 10)
+nrow(infMort_nogeo)/nrow(infMort_total)*100
 
 #Infant Mortality by CD
 infMort_byCD_byYear <- group_by(death_cd, CONGRESS, CD, year) %>%
@@ -355,6 +362,13 @@ mld_race_spec<-total_deaths_IMR%>%
   })
 write.csv(mld_race_spec, "Final Results/mld_race_spec.csv", row.names = FALSE)
 ################################################################################
+#Determine what % of DoD were not geocoded
+DOD_total <- filter(death_original_despair, DESPAIR==1)%>%
+  mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
+DOD_nogeo <- filter(DOD_total, is.na(GEOID10) | char < 10)
+nrow(DOD_nogeo)/nrow(DOD_total)*100
+
+
 DOD_byYear <- group_by(death_cd, year) %>%
   summarise(DOD = sum(DESPAIR, na.rm = TRUE))
 
@@ -428,7 +442,20 @@ DOD_byRaceSexCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAge
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
-write.csv(DOD_byRaceSexCD_2, file = "DOD_byRaceSexCD_2.csv")
+
+#Save as R Object
+save(DOD_byRaceSexCD_2, file = "./ShinyApp/DOD_byRaceSexCD_2.Rdata")
+
+#Mortality Rates - Combined congresses - no sex
+DOD_byRaceCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population), as.integer(RACE)!=3) %>%
+  select(-c(DOD, Population))
+
+#Save as R Object
+save(DOD_byRaceCD_2, file = "./ShinyApp/DOD_byRaceCD_2.Rdata")
 
 #Mortality Rates - Combined congresses - with details
 DOD_byRaceSexCD_2_details <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2) %>%
@@ -452,9 +479,6 @@ DOD_byRaceSexCD_2_orig <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceS
   select(-c(DOD, Population))
 write.csv(DOD_byRaceSexCD_2_orig, file = "DOD_byRaceSexCD_2_orig.csv")
 
-#Save as R Object
-save(DOD_byRaceSexCD_2, file = "./ShinyApp/DOD_byRaceSexCD_2.Rdata")
-
 #Mortality Rates - cd116
 DOD_byRaceSexCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
@@ -465,6 +489,17 @@ DOD_byRaceSexCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_
 
 #Save as R Object
 save(DOD_byRaceSexCD_2_cd116, file = "./ShinyApp/DOD_byRaceSexCD_2_cd116.Rdata")
+
+#Mortality Rates - cd116 - no sex
+DOD_byRaceCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population), as.integer(RACE)!=3) %>%
+  select(-c(DOD, Population))
+
+#Save as R Object
+save(DOD_byRaceCD_2_cd116, file = "./ShinyApp/DOD_byRaceCD_2_cd116.Rdata")
 
 #Mortality Rates - cd116 - with details
 DOD_byRaceSexCD_2_cd116_details <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
@@ -504,6 +539,17 @@ DOD_byRace2SexCD_2 <- left_join(DOD_byRace2SexCD_deaths_2, population_byRace2Sex
 #Save as R Object
 save(DOD_byRace2SexCD_2, file = "./ShinyApp/DOD_byRace2SexCD_2.Rdata")
 
+#Mortality Rates - White/Non-White - no sex
+DOD_byRace2CD_2 <- left_join(DOD_byRace2SexCD_deaths_2, population_byRace2SexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, RACE2, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population)) %>%
+  select(-c(DOD, Population))
+
+#Save as R Object
+save(DOD_byRace2CD_2, file = "./ShinyApp/DOD_byRace2CD_2.Rdata")
+
 #Mortality Rates - White/Non-White - cd116
 DOD_byRace2SexCD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, population_byRace2SexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE2, AGE_CAT_EDUC) %>%
@@ -514,6 +560,17 @@ DOD_byRace2SexCD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, populatio
 
 #Save as R Object
 save(DOD_byRace2SexCD_2_cd116, file = "./ShinyApp/DOD_byRace2SexCD_2_cd116.Rdata")
+
+#Mortality Rates - White/Non-White - cd116 - no sex
+DOD_byRace2CD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, population_byRace2SexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, RACE2, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population)) %>%
+  select(-c(DOD, Population))
+
+#Save as R Object
+save(DOD_byRace2CD_2_cd116, file = "./ShinyApp/DOD_byRace2CD_2_cd116.Rdata")
   
 ################################################################################
 
@@ -600,7 +657,7 @@ DOD_byEducSexCD_deaths <- group_by(death_cd, CD, CONGRESS, SEX, EDUC, AGE_CAT_ED
 DOD_byEducSexCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#no sex
+#no se
 DOD_byEducCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
@@ -625,7 +682,19 @@ DOD_byEducSexCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAge
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-write.csv(DOD_byEducSexCD_2, file = "DOD_byEducSexCD_2.csv")
+#Save as R Object
+save(DOD_byEducSexCD_2, file = "./ShinyApp/DOD_byEducSexCD_2.Rdata")
+
+#Combined congress - no sex
+DOD_byEducCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population)) %>%
+  select(-c(DOD, Population))
+
+#Save as R Object
+save(DOD_byEducCD_2, file = "./ShinyApp/DOD_byEducCD_2.Rdata")
 
 #Combined congress - with details
 DOD_byEducSexCD_2_details <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2) %>%
@@ -648,11 +717,6 @@ DOD_byEducSexCD_2_orig <- left_join(DOD_byEducSexCD_deaths_2, population_byEducS
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-write.csv(DOD_byEducSexCD_2_orig, file = "DOD_byEducSexCD_2_orig.csv")
-
-#Save as R Object
-save(DOD_byEducSexCD_2, file = "./ShinyApp/DOD_byEducSexCD_2.Rdata")
-
 #CD116
 DOD_byEducSexCD_2_cd116_orig <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
@@ -661,7 +725,7 @@ DOD_byEducSexCD_2_cd116_orig <- left_join(DOD_byEducSexCD_deaths_2_cd116, popula
   filter(!is.na(Population))
 
 #CD116 - no sex
-DOD_byEducCD_2_cd116 <- inner_join(DOD_byEducCD_deaths_2_cd116, population_byEducAgeCD_byCongress2) %>%
+DOD_byEducCD_2_cd116_details <- inner_join(DOD_byEducCD_deaths_2_cd116, population_byEducAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
@@ -676,6 +740,17 @@ DOD_byEducSexCD_2_cd116 <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_
 
 #Save as R Object
 save(DOD_byEducSexCD_2_cd116, file = "./ShinyApp/DOD_byEducSexCD_2_cd116.Rdata")
+
+#CD116 - no sex
+DOD_byEducCD_2_cd116 <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  filter(!is.na(Population)) %>%
+  select(-c(DOD, Population))
+
+#Save as R Object
+save(DOD_byEducCD_2_cd116, file = "./ShinyApp/DOD_byEducCD_2_cd116.Rdata")
 
 ################################################################################
 
@@ -763,6 +838,7 @@ DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details,
   filter(as.integer(EDUC)!=4)
 
 #Combined congress - cd116
+
 DOD_byEducSexCD_absDisparity_2_cd116 <- full_join(DOD_byEducSexCD_2_cd116, 
                                             DOD_byEducSexCD_college_2_cd116,
                                             c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
@@ -1060,6 +1136,10 @@ cd_outlines <- bind_rows(cd111, cd112, cd113, cd114) %>%
 cd_outlines_2 <- filter(cd_outlines, as.integer(CONGRESS) == 1 | as.integer(CONGRESS) == 3) %>%
   inner_join(CONGRESS2)
 
+#Cities
+#cities <- tibble(city = c("Philadelphia", "Pittsburgh"), lon = c(-39.9526, -40.4406), lat = c(75.1652, 79.9959)) %>%
+#  st_as_sf(coords = c("lon", "lat"), crs = st_crs(IMR_Maps_byCD_2))
+
 IMR_Maps_byCD <- inner_join(cd_outlines, IMR_byCD) %>%
   group_by(CD, CONGRESS) %>%
   summarise(CD, IMR = sum(InfantMortality)/sum(LiveBirths)*1000, geometry)
@@ -1067,7 +1147,9 @@ IMR_Maps_byCD <- inner_join(cd_outlines, IMR_byCD) %>%
 #Combined Congresses
 IMR_Maps_byCD_2 <- inner_join(cd_outlines_2, IMR_byCD_2) %>%
   group_by(CD, CONGRESS2) %>%
-  summarise(IMR = sum(InfantMortality)/sum(LiveBirths)*1000, geometry)
+  summarise(IMR = sum(InfantMortality)/sum(LiveBirths)*1000, geometry)%>%
+  ungroup() %>%
+  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T))
 
 #Save as R Object
 save(IMR_Maps_byCD_2, file = "./ShinyApp/IMR_Maps_byCD_2.Rdata")
@@ -1075,12 +1157,13 @@ save(IMR_Maps_byCD_2, file = "./ShinyApp/IMR_Maps_byCD_2.Rdata")
 #IMR with CD116 Boundaries
 IMR_Maps_cd116 <- inner_join(cd116, IMR_byCD_2) %>%
   select(-c(InfantMortality, LiveBirths)) %>%
-  filter(as.integer(CONGRESS2)==2)
+  filter(as.integer(CONGRESS2)==2)%>%
+  ungroup() %>%
+  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T))
 
 #Save as R Object
 save(IMR_Maps_cd116, file = "./ShinyApp/IMR_Maps_cd116.Rdata")
 
-  
 DOD_Maps_byCD <- inner_join(cd_outlines, DOD_byCD) %>%
   group_by(CD, CONGRESS) %>%
   summarise(CD, MR = sum(DOD)/sum(Population)*10000, geometry)
@@ -1088,14 +1171,18 @@ DOD_Maps_byCD <- inner_join(cd_outlines, DOD_byCD) %>%
 #Combined congresses
 DOD_Maps_byCD_2 <- inner_join(cd_outlines_2, DOD_byCD_2) %>%
   group_by(CD, CONGRESS2) %>%
-  summarise(CD, MR)
+  summarise(CD, MR)%>%
+  ungroup() %>%
+  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T))
 
 #Save as R Object
 save(DOD_Maps_byCD_2, file = "./ShinyApp/DOD_Maps_byCD_2.Rdata")
 
 #IMR with CD116 Boundaries
 DOD_Maps_cd116 <- inner_join(cd116, DOD_byCD_2) %>%
-  select(-c(DOD, Population))
+  select(-c(DOD, Population))%>%
+  ungroup() %>%
+  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T))
 
 #Save as R Object
 save(DOD_Maps_cd116, file = "./ShinyApp/DOD_Maps_cd116.Rdata")
@@ -1119,36 +1206,6 @@ cd116_districts_tracts <- ggplot() +
   geom_sf(data = cd116, size = 1, aes(fill = CD116FP, geometry = geometry)) + 
   geom_sf(data = cd116_tracts, fill = NA, size = .1, aes(geometry = geometry))
 cd116_districts_tracts  
-
-################################################################################
-
-#counties -- urban rural
-
-#Looks like the shapefiles still are over-extending the northwest boundary
-
-#counties
-# counties2014 <- counties(state = "Pennsylvania", cb = FALSE, resolution = '20m', year = 2012)
-# 
-# counties_urbanRural <- urbanRural_counties %>%
-#   group_by(GEOID) %>%
-#   summarize(urban = sum(urban), urban_pct = round(urban/n()*100, digits = 2), 
-#             suburban = sum(suburban), suburban_pct = round(suburban/n()*100, digits = 2),
-#             rural = sum(rural), rural_pct = round(rural/n()*100, digits = 2),
-#             total = sum(urban, suburban, rural), n = n()) %>%
-#   mutate(
-#     min = pmin(urban_pct, suburban_pct, rural_pct),
-#     CONGRESS = 2,
-#     urbanRural = case_when(
-#       urban_pct >= 60 ~ 1,
-#       suburban_pct >= 60 ~ 2,
-#       rural_pct >= 60 ~ 3,
-#       rural_pct == pmin(urban_pct, suburban_pct, rural_pct) ~ 4,
-#       suburban_pct == pmin(urban_pct, suburban_pct, rural_pct) ~ 5,
-#       urban_pct == pmin(urban_pct, suburban_pct, rural_pct) ~ 6) %>%
-#       factor(levels = c(1,2,3,4,5,6), labels = c("Urban", "Suburban", "Rural", "Urban/Suburban", 
-#                                                  "Urban/Rural","Suburban/Rural"))) %>%
-#   inner_join(counties2014)
-
 
 ################################################################################
 #IMR Map - CD111-CD112
@@ -1177,21 +1234,21 @@ IMR_Map_cd113_114
 
 #IMR Maps - Combined Congresses
 IMR_Maps_2 <- ggplot(IMR_Maps_byCD_2) +
-  geom_sf(aes(fill = IMR), lwd = .1) + 
+  geom_sf(aes(fill = jenks), lwd = .1) + 
+  #geom_sf(data = cities) +
+  #geom_point(data = cities, aes(x = lon, y = lat)) +
   theme_void() +
   theme(axis.title = element_blank(), axis.text = element_blank(), 
         axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5, vjust = 3),
-        legend.position = "bottom", strip.text = element_text(size = 12), 
-        legend.text = element_text(size = 10), legend.title = element_text(size = 12)) + 
+        legend.position = "bottom", strip.text = element_text(size = 15), 
+        legend.text = element_text(size = 15), legend.title = element_text(size = 15)) + 
   facet_wrap(~ CONGRESS2, ncol = 1) +
-  #scale_colour_stepsn(colors = terrain.colors(10)) +
-  scale_fill_continuous(type = "viridis") +
-  #scale_fill_scico(palette = "lajolla") +
+  guides(fill=guide_legend(nrow=2, byrow = T)) +
+  scale_fill_manual(values = colorRampPalette(colors = c("white", "red"))(5))+
   labs(fill = "IMR per 1,000 Live Births")
 IMR_Maps_2
 ggsave(IMR_Maps_2, file=paste0(results_folder, "IMR_Maps_2.png"), device = agg_png, res = 300, units = "in",
        width = 10, height = 7, dpi = 300)
-
 ################################################################################
 
 #Combined Congresses
@@ -1204,8 +1261,9 @@ IMR_byCD_byRace_Plots_2 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP)
                                 "Non-Hispanic Black" = color_Black, "Non-Hispanic White" = color_White)) + 
   theme_bw() + 
   theme(axis.title = element_text(size = 20), axis.text = element_text(size = 15),
-        legend.position = "bottom", legend.text=element_text(size=15),
-        strip.text = element_text(size = 15), legend.title = element_text(size = 15)) + 
+        legend.position = "bottom", legend.text=element_text(size=20),
+        strip.text = element_text(size = 16, face = "bold"), legend.title = element_blank(),
+        text = element_text(color="black"), strip.background = element_blank()) + 
   guides(color = guide_legend(nrow = 2,  byrow = TRUE)) +
   xlab("Congressional District") +
   ylab("IMR per 1,000 Live Births") +
@@ -1357,16 +1415,16 @@ ggsave(DOD_Map_cd113_114, file=paste0(results_folder, "DOD_Map_cd113_114.png"), 
 
 #DOD Maps - Combined congresses
 DOD_Maps_2 <- ggplot(DOD_Maps_byCD_2) +
-  geom_sf(aes(fill = MR), lwd = .1) +
+  geom_sf(aes(fill = jenks), lwd = .1) +
   theme_void() +
   theme(axis.title = element_blank(), axis.text = element_blank(), 
         axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5, vjust = 3),
-        legend.position = "bottom", strip.text = element_text(size = 12), 
-        legend.text = element_text(size = 10), legend.title = element_text(size = 12)) + 
+        legend.position = "bottom", strip.text = element_blank(),#element_text(size = 15), 
+        legend.text = element_text(size = 20), legend.title = element_text(size = 20)) + 
   facet_wrap(~ CONGRESS2, ncol = 1) +
-  scale_fill_continuous(type = "viridis") +
-  #scale_fill_brewer(palette = "YlOrRd") +
-  labs(fill = "Mortality Rate, per 10,000 People")
+  guides(fill=guide_legend(nrow=2, byrow = T)) +
+  scale_fill_manual(values = colorRampPalette(colors = c("white", "red"))(5))+
+  labs(fill = "Mortality Rate, \nper 10,000 People")
 DOD_Maps_2
 ggsave(DOD_Maps_2, file=paste0(results_folder, "DOD_Maps_2.png"), device = agg_png, res = 300, units = "in",
        width = 10, height = 7, dpi = 300)
@@ -1538,6 +1596,28 @@ DOD_byEducSexAge_Plot <- ggplot(filter(DOD_byEducSexCD_2, MR > 0, as.integer(EDU
 DOD_byEducSexAge_Plot
 ggsave(DOD_byEducSexAge_Plot, file=paste0(results_folder, "DOD_byEducSexAge_Plot.png"),  
        device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
+
+#All years - no sex
+DOD_byEducAge_Plot <- ggplot(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5),
+                                aes(x = CD, y = MR)) + 
+  geom_line() + 
+  geom_point(size = 3, aes(color = EDUC)) +
+  scale_color_manual(values = c("Less than High School" = color_LessHS, "High School" = color_HS, 
+                                "Some College/Associate Degree" = color_SomeCollege, "Bachelor/Master/Doctorate/Professional Degree" = color_Bachelor)) + 
+  xlab("Congressional District") +
+  ylab("Mortality Rate, per 10,000 People") +
+  labs(color = "Education") + 
+  facet_nested_wrap(vars(CONGRESS2, AGE_CAT_EDUC), dir = "h", nrow = 2, ncol = 3) +
+  theme_bw() + 
+  theme(axis.title = element_text(size = 20), axis.text = element_text(size = 15),
+        legend.position = "bottom", legend.text=element_text(size=15),
+        strip.text = element_text(size = 15), legend.title = element_text(size = 15)) + 
+  guides(color = guide_legend(nrow = 2)) +
+  scale_y_continuous(trans = 'log10', breaks = c(1,10,100,1000), limits=c(.1, NA), labels = c(1,10,100,1000)) +
+  scale_x_discrete(expand=expansion(mult=c(0.1, 0.05))) +
+  annotation_logticks(sides="b") + 
+  coord_flip()
+DOD_byEducAge_Plot
 
 #CD111 - CD112 
 DOD_byEducSexAge_Plot_cd111_112 <- ggplot(filter(DOD_byEducSexCD_2, as.integer(CONGRESS2) == 1, MR > 0, as.integer(EDUC) < 5),
