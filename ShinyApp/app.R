@@ -102,12 +102,10 @@ server <- function(input, output, session) {
   load(file = "IMR_byCD_byRace_2_cd116.Rdata", envir=.GlobalEnv)
   
   #IMR plot data - disparities
-  #load(file = "IMR_byCD_byRace_absDisparity_2.Rdata", envir=.GlobalEnv)
-  load(file="CI_estim_rate_imr_add_fast_charts.Rdata", envir=.GlobalEnv)
+  load(file = "IMR_byCD_byRace_absDisparity_2.Rdata", envir=.GlobalEnv)
   
   #IMR plot data - disparities - cd116
-  #load(file = "IMR_byCD_byRace_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
-  load(file="CI_estim_rate_imr_add_fast_cd116.Rdata", envir=.GlobalEnv)
+  load(file = "IMR_byCD_byRace_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race
   load(file = "DOD_byRaceCD_2.Rdata", envir=.GlobalEnv)
@@ -116,12 +114,10 @@ server <- function(input, output, session) {
   load(file = "DOD_byRaceCD_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - disparities
-  #load(file = "DOD_byRaceSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
-  load(file="CI_estim_rate_dod_race_add.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byRaceCD_absDisparity_2.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - disparities - cd116
-  #load(file = "DOD_byRaceSexCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
-  load(file="CI_estim_rate_dod_race_add_cd116.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byRaceCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by race - rolled up
   load(file = "DOD_byRace2CD_2.Rdata", envir=.GlobalEnv)
@@ -136,12 +132,10 @@ server <- function(input, output, session) {
   load(file = "DOD_byEducCD_2_cd116.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by education - disparities
-  #load(file = "DOD_byEducSexCD_absDisparity_2.Rdata", envir=.GlobalEnv)
-  load(file= "CI_estim_rate_dod_add_fast_charts.Rdata", envir = .GlobalEnv)
+  load(file = "DOD_byEducCD_absDisparity_2.Rdata", envir=.GlobalEnv)
   
   #DOD plot data - by education - disparities - cd116
-  #load(file = "DOD_byEducSexCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
-  load(file="CI_estim_rate_dod_add_fast_cd116.Rdata", envir=.GlobalEnv)
+  load(file = "DOD_byEducCD_absDisparity_2_cd116.Rdata", envir=.GlobalEnv)
   
   #Sakney
   load(file = "sankey_111_113_full.Rdata", envir=.GlobalEnv)
@@ -316,11 +310,11 @@ server <- function(input, output, session) {
      if((input$Measure_Charts == "Infant Mortality Rate") &
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
-         plot_imr_race(filter(CI_estim_rate_imr_add_fast_charts, RACEHISP!="Non-Hispanic White"), colors, input$Congress_Charts, input$Displayed)}
+         plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2, RACEHISP!="Non-Hispanic White"), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Infant Mortality Rate") &
         (input$Displayed == "Absolute Disparities") &
         (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-          plot_imr_race(filter(CI_estim_rate_imr_add_fast_cd116, RACEHISP!="Non-Hispanic White", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
+          plot_imr_race(filter(IMR_byCD_byRace_absDisparity_2_cd116, RACEHISP!="Non-Hispanic White", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Displayed)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates") &
@@ -335,12 +329,12 @@ server <- function(input, output, session) {
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <- 
-         plot_dod(filter(CI_estim_rate_dod_race_add, RACE!="White"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byRaceCD_absDisparity_2, RACE!="White"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-         plot_dod(filter(CI_estim_rate_dod_race_add_cd116, RACE!="White", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byRaceCD_absDisparity_2_cd116, RACE!="White", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race (Rolled-Up)") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
@@ -362,12 +356,12 @@ server <- function(input, output, session) {
        (input$Subgroup == "Education") &
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts != "116 (2019 - 2020)*")) {filename <-
-         plot_dod(filter(CI_estim_rate_dod_add_fast_charts, EDUC!="Bachelor/Master/Doctorate/Professional Degree"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byEducCD_absDisparity_2, EDUC!="Bachelor/Master/Doctorate/Professional Degree"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Absolute Disparities") &
        (input$Congress_Charts == "116 (2019 - 2020)*")) {filename <- 
-         plot_dod(filter(CI_estim_rate_dod_add_fast_cd116, EDUC!="Bachelor/Master/Doctorate/Professional Degree", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DOD_byEducCD_absDisparity_2_cd116, EDUC!="Bachelor/Master/Doctorate/Professional Degree", as.integer(CONGRESS2) == 2), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
      filename
   })
 
