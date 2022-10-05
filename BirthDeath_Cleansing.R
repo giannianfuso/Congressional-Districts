@@ -22,47 +22,6 @@ setwd("C:/Users/ga437/OneDrive - Drexel University/Documents/Congressional-Distr
 
 ################################################################################
 
-#Urban/Rural Analysis File
-# urbanRural_original <- fread("Data/urbanRural2010_PA.csv")
-# 
-# urbanRural <- urbanRural_original %>% rename(
-#                                       GEOID10 = "State-County-Tract FIPS Code (lookup by address at http://www.ffiec.gov/Geocode/)",
-#                                       primary_RUCA = "Primary RUCA Code 2010",
-#                                       pop_tract = "Tract Population, 2010",
-#                                       area = "Land Area (square miles), 2010",
-#                                       density = "Population Density (per square mile), 2010") %>%
-#   select(-c("State-County FIPS Code", "Select State", "Select County", "Secondary RUCA Code, 2010 (see errata)")) %>%
-#   mutate(
-#     primary_RUCA = factor(primary_RUCA),
-#     urban_rural = case_when(
-#       #urban
-#       primary_RUCA == 1 ~ 1,
-#       #suburban
-#       primary_RUCA %in%c(2:6) ~ 2,
-#       #rural
-#       primary_RUCA %in%c(7:10) ~ 3,
-#       #missing
-#       TRUE ~ 99),
-#     urban_rural = factor(urban_rural, labels=c("Urban", "Suburban", "Rural", "Missing")),
-#     urban = case_when(
-#       as.numeric(urban_rural) == 1 ~ 1,
-#       TRUE ~ 0),
-#     suburban = case_when(
-#       as.numeric(urban_rural) == 2 ~ 1,
-#       TRUE ~ 0),
-#     rural = case_when(
-#       as.numeric(urban_rural) == 3 ~ 1,
-#       TRUE ~0))
-#   
-# urbanRural_counties <- urbanRural %>%
-#   mutate(GEOID = substr(GEOID10,1,5))
-# 
-# #Pull data to csv 
-# write_csv(urbanRural_counties,"C:\\Users\\ga437\\OneDrive - Drexel University\\Congressional_Districts_BRFSS\\Data_ByCounty_Anfuso\\urbanRural_counties.csv")
-
-
-  ################################################################################
-
 #Columns we need for birth files
 keep_birth <- c("FILENO", "SEX", "CHILDDOB", "MOTHEDU", "MOTHHISP0315", 
                 "MOTHHISP8902", "MOTHRACE0315", "mothrace7902", "FATHEDU",
@@ -101,11 +60,109 @@ birth2015 <- fread(paste0(dir_name, "birthgeo2015.csv")) %>%
          momreszip = as.character(momreszip), year = "2015") %>%
   select(one_of(keep_birth))
 
-birth_original <- bind_rows(birth2010, birth2012, birth2012, 
+birth_original <- bind_rows(birth2010, birth2011, birth2012, 
                             birth2013, birth2014, birth2015)
 
+birth_original_modified <- birth_original %>%
+  mutate(
+    MOMHISP = case_when(
+      #(MOTHHISP8902 == 0) | only works if we have pre-2010 data
+      (MOTHHISP0315 == 1) ~ 1,
+      #((MOTHHISP8902 >= 1) & (MOTHHISP8902 <= 5) | 
+      (MOTHHISP0315 >= 2) & (MOTHHISP0315 <= 5) ~ 2,
+      #(MOTHHISP8902 == 9) | 
+      (MOTHHISP0315 == 9) ~ 3),
+    DADHISP = case_when(
+      #(FATHHISP8902 == 0) | 
+      (FATHHISP0315 == 1) ~ 1,
+      # ((FATHHISP8902 >= 1) & (FATHHISP8902 <= 5) | 
+      (FATHHISP0315 >= 2) & (FATHHISP0315 <= 5) ~ 2,
+      # (FATHHISP8902 == 9) | 
+      (FATHHISP0315 == 9) ~ 3),
+    HISP = case_when(
+      !is.na(MOMHISP) ~ MOMHISP,
+      is.na(MOMHISP) ~ DADHISP) %>%
+      factor(labels = c("Hispanic", "Non-Hispanic", "Unknown")),
+    MOMRACE = case_when(
+      # (mothrace7902 == 1) | 
+      (MOTHRACE0315 == 1)  ~ 1,
+      # (mothrace7902 == 2) | 
+      (MOTHRACE0315 == 2)  ~ 2,
+      # (mothrace7902 == 3) | 
+      (MOTHRACE0315 == 3)  ~ 3, 
+      # (mothrace7902 >=4 & mothrace7902<= 6) | (mothrace7902 == 8)
+      (MOTHRACE0315 >= 4 & MOTHRACE0315 <= 14) ~ 4,
+      # (mothrace7902 == 7 | mothrace7902 == 0 | is.na(mothrace7902))
+      (MOTHRACE0315 >= 15 | is.na(MOTHRACE0315)) ~ 5),
+    DADRACE = case_when(
+      # (fathrace7902 == 1)  |
+      (FATHRACE0315 == 1) ~ 1,
+      # (fathrace7902 == 2) | 
+      (FATHRACE0315 == 2) ~ 2,
+      # (fathrace7902 == 3) | 
+      (FATHRACE0315 == 3) ~ 3, 
+      # (fathrace7902 >=4 & fathrace7902<= 6) | (fathrace7902 == 8) |
+      (FATHRACE0315 >= 4 & FATHRACE0315 <= 14) ~ 4,
+      # (fathrace7902 == 7 | fathrace7902 == 0 | is.na(fathrace7902)) | 
+      (FATHRACE0315 >= 15 | is.na(FATHRACE0315)) ~ 5),
+    RACE = case_when(
+      !is.na(MOMRACE) ~ MOMRACE,
+      is.na(MOMRACE) ~ DADRACE) %>%
+      factor(
+        levels = c(1,2,3,4,5),
+        labels = c("White", "Black", "American Indian, Alaska Native", 
+                   "Asian American Pacific Islander", "Other")),
+    RACE2 = case_when(
+      as.integer(RACE) == 1 ~ 1,
+      as.integer(RACE) > 1 ~ 2) %>%
+      factor(
+        levels = c(1,2),
+        labels = c("White", "Non-White")),
+    RACEHISP = case_when(
+      as.integer(HISP) == 2 ~ 1,
+      as.integer(HISP) == 1 & as.integer(RACE) == 1 ~ 2,
+      as.integer(HISP) == 1 & as.integer(RACE) == 2 ~ 3,
+      as.integer(HISP) == 1 & as.integer(RACE) == 3 ~ 4,
+      as.integer(HISP) == 1 & as.integer(RACE) == 4 ~ 5,
+      as.integer(HISP) == 1 & as.integer(RACE) == 5 ~ 6,
+      as.integer(HISP) == 3 ~ 7) %>%
+      factor(
+        levels = c(1,2,3,4,5,6,7),
+        labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Black", 
+                   "Non-Hispanic American Indian, Alaska Native",
+                   "Non-Hispanic Asian American Pacific Islander", "Non-Hispanic Other", "Unknown")),
+    RACEHISP2 = case_when(
+      (as.integer(HISP) == 2) ~ 1,
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2,
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3,
+      (as.integer(HISP) == 3) ~ 4) %>%
+      factor(
+        levels = c(1,2,3,4),
+        labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Non-White", "Unknown")),
+    CONGRESS = case_when(
+      year >= 2009 & year <= 2010 ~ 1,
+      year >= 2011 & year <= 2012 ~ 2,
+      year >= 2013 & year <= 2014 ~ 3,
+      year == 2015 ~ 4) %>%
+      factor(
+        levels = c(1,2,3,4),
+        labels = c("111 (2009 - 2010)", "112 (2011 - 2012)", 
+                   "113 (2013 - 2014)", "114 (2015 - 2016)")),
+    CONGRESS2 = case_when(
+      year >= 2010 & year <= 2012 ~ 1,
+      year >= 2013 & year <= 2015 ~ 2) %>%
+      factor(
+        levels = c(1,2),
+        labels = c("111 - 112 (2010 - 2012)",
+                   "113 - 114 (2013 - 2015)")))
+
+birth_original_modified_noracehisp <- birth_original_modified %>%
+  filter(RACEHISP == "Unknown")
+
+birth_original_modified_racehisp_pct <- nrow(birth_original_modified_noracehisp)/nrow(birth_original_modified) * 100
+
 #Columns we need for death files
-keep_death <- c("FILENO", "SEX", "AGE6011", "AGE1215", "AGE", "DOB", "PLCDTH", "HISPANIC", 
+keep_death <- c("FILENO", "SEX", "AGE6011", "AGE1215", "AGE", "Age_death", "DOB", "PLCDTH", "HISPANIC", 
                 "RACE9011", "race1215", "EDUC8711", "EDUC1215", "EDUC", 
                 "MARRIED", "MANDEATH", "CODICD10", "INFMORT", 
                 "CTYDEATH","GEOID10", "uniqueID", "year")
@@ -141,15 +198,76 @@ death2015 <- fread(paste0(dir_name, "deathgeo2015.csv")) %>%
   mutate(EDUC = strtoi(EDUC), year = "2015") %>%
   select(one_of(keep_death))
 
-death_original <- bind_rows(death2010, death2012, death2012, 
+death_original <- bind_rows(death2010, death2011, death2012, 
                             death2013, death2014, death2015)
+
+birth_nogeo <- nrow(filter(birth_original, is.na(GEOID10) | nchar(as.numeric(GEOID10)) < 10))/nrow(birth_original) * 100
+death_nogeo <- nrow(filter(death_original, is.na(GEOID10) | nchar(as.numeric(GEOID10)) < 10))/nrow(death_original) * 100
 
 #Add despair indicator for deaths
 death_original_despair <- death_original %>%
   mutate(
-    AGE = case_when(
-      year <= 2011 ~ AGE6011,
-      year >= 2012 ~ AGE1215), 
+    EDUC = case_when(
+      EDUC == 0 ~ 1,
+      EDUC == 1 ~ 2, 
+      EDUC == 2 ~ 3,
+      EDUC == 3 ~ 4,
+      TRUE ~ 5) %>%
+      factor(
+        levels = c(1,2,3,4,5),
+        labels = c("Less than High School", "High School", "Some College/Associate Degree",
+                   "Bachelor/Master/Doctorate/Professional Degree", "Unknown")),
+    RACE = case_when(
+      RACE9011 == 1 | 
+        race1215 == 01 ~ 1,
+      RACE9011 == 2 | 
+        race1215 == 02 ~ 2,
+      RACE9011 == 3 | 
+        race1215 == 03 ~ 3,
+      ((RACE9011 >= 4 & RACE9011 <= 8) | RACE9011 == 0) | 
+        (race1215 >= 04 & race1215 <= 14) ~ 4,
+      RACE9011 == 9 | is.na(RACE9011) | 
+        is.na(race1215) | race1215>= 15 ~ 5) %>%
+      factor(
+        levels = c(1,2,3,4,5),
+        labels = c("White", "Black", 
+                   "American Indian, Alaska Native", "Asian American Pacific Islander", "Other")),
+    RACE2 = case_when(
+      as.integer(RACE) == 1 ~ 1,
+      as.integer(RACE) > 1 ~ 2) %>%
+      factor(
+        levels = c(1,2),
+        labels = c("White", "Non-White")),
+    HISP = case_when(
+      #Non-Hispanic
+      HISPANIC == 1 ~ 1,
+      #Hispanic
+      HISPANIC >= 2 & HISPANIC <= 5 ~ 2,
+      #Unknown
+      HISPANIC == 9 ~ 3),
+    HISP = factor(HISP, labels = c("Non-Hispanic", "Hispanic", "Unknown")),
+    RACEHISP = case_when(
+      (as.integer(HISP) == 2) ~ 1,
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 1) ~ 2,
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 2) ~ 3,
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 3) ~ 4,
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 4) ~ 5,
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 5) ~ 6,
+      (as.integer(HISP) == 3) ~ 7) %>%
+      factor(
+        levels = c(1,2,3,4,5,6,7),
+        labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Black", 
+                   "Non-Hispanic American Indian, Alaska Native",
+                   "Non-Hispanic Asian American Pacific Islander", "Non-Hispanic Other", "Unknown")),
+    RACEHISP2 = case_when(
+      (as.integer(HISP) == 2) ~ 1,
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2,
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3,
+      (as.integer(HISP) == 3) ~ 4) %>%
+      factor(
+        levels = c(1,2,3,4),
+        labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Non-White", "Unknown")),
+    AGE = floor(Age_death),
     DESPAIR = case_when(
       #Suicide
       ((CODICD10 >= "X60" & CODICD10 <= "X84") | (CODICD10 == "Y87.0")) & 
@@ -164,6 +282,16 @@ death_original_despair <- death_original %>%
         (AGE >= 25) & (AGE <= 64) ~ 1,
       TRUE ~ 0)
   )
+
+death_original_despair_noracehisp <- death_original_despair %>%
+  filter(RACEHISP == "Unknown")
+
+death_original_despair_noracehisp_pct <- nrow(death_original_despair_noracehisp)/nrow(death_original_despair) * 100
+
+death_original_despair_noeduc <- death_original_despair %>%
+  filter(EDUC == "Unknown" | is.na(AGE))
+
+death_original_despair_noeduc_pct <- nrow(death_original_despair_noeduc)/nrow(death_original_despair) * 100
 
 ################################################################################
 
@@ -461,9 +589,7 @@ death_mutations <- function(df) {
             levels = c(1,2,3,4),
             labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Non-White", "Unknown")),
       SEX = factor(SEX, levels = c(1,2,3), labels = c("Male", "Female", "Unknown")),
-      AGE = case_when(
-        year <= 2011 ~ AGE6011,
-        year >= 2012 ~ AGE1215), 
+      AGE = floor(Age_death),
       DESPAIR = case_when(
         #Suicide
         ((CODICD10 >= "X60" & CODICD10 <= "X84") | (CODICD10 == "Y87.0")) & 

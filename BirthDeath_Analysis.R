@@ -45,7 +45,15 @@ color_Bachelor <- "#f0e442"
 #Determine what % of all infant mortalities could not be geocoded
 infMort_total <- filter(death_original, INFMORT == 1) %>%
   mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
+
+infMort_total_byYear <- infMort_total %>% group_by(year) %>% summarise(tot=n())
+
 infMort_nogeo <- filter(infMort_total, is.na(GEOID10) | char < 10)
+
+infMort_nogeo_byYear <- infMort_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
+  inner_join(infMort_total_byYear) %>%
+  mutate(pct = n/tot*100)
+
 nrow(infMort_nogeo)/nrow(infMort_total)*100
 
 #Infant Mortality by CD
@@ -191,57 +199,70 @@ IMR_byCD_byRace_absDisparity <- full_join(IMR_byCD_byRace,
   mutate(IMR_absDisparity = (IMR-IMR_nhw))
 
 #Combined Congresses
-IMR_byCD_byRace_absDisparity_2 <- full_join(IMR_byCD_byRace_2, 
+IMR_byCD_byRace_absDisparity_2 <- full_join(IMR_byCD_byRace_2_details, 
                                           IMR_byCD_byRace_nhw_2, 
                                           by = c("CONGRESS2", "CD")) %>%
-  select(-c("RACEHISP.y")) %>%
-  rename(RACEHISP = RACEHISP.x) %>%
-  filter(as.integer(RACEHISP) != 7) %>%
-  mutate(IMR_absDisparity = (IMR-IMR_nhw), paired = as.integer(CD)) %>%
-  select(c(CONGRESS2, CD, RACEHISP, IMR_absDisparity, paired)) %>%
+  rename(RACEHISP = RACEHISP.x, LiveBirths = LiveBirths.x, LiveBirths_nhw = LiveBirths.y) %>%
+  filter(as.integer(RACEHISP) < 6) %>%
+  mutate(IMR_absDisparity = (IMR-IMR_nhw), paired = as.integer(CD), IMR_raw = IMR/1000, IMR_nhw_raw = IMR_nhw/1000,
+         se = sqrt(IMR_raw*(1-IMR_raw)/LiveBirths + IMR_nhw_raw*(1-IMR_nhw_raw)/LiveBirths_nhw)*1000, lci = str_trim(format(round(IMR_absDisparity-1.96*se,2),nsmall=2),side="both"),
+         uci = str_trim(format(round(IMR_absDisparity+1.96*se,2),nsmall=2),side="both")) %>%
+  select(c(CONGRESS2, CD, RACEHISP, IMR_absDisparity, paired, se, lci, uci)) %>%
   rename(IMR = IMR_absDisparity)
 
 #Save as R Object
 save(IMR_byCD_byRace_absDisparity_2, file = "./ShinyApp/IMR_byCD_byRace_absDisparity_2.Rdata")
 
 #Relative disparities
-IMR_byCD_byRace_relDisparity_2 <- full_join(IMR_byCD_byRace_2, 
+IMR_byCD_byRace_relDisparity_2 <- full_join(IMR_byCD_byRace_2_details, 
                                             IMR_byCD_byRace_nhw_2, 
                                             by = c("CONGRESS2", "CD")) %>%
-  select(-c("RACEHISP.y")) %>%
-  rename(RACEHISP = RACEHISP.x) %>%
+  rename(RACEHISP = RACEHISP.x, LiveBirths = LiveBirths.x, LiveBirths_nhw = LiveBirths.y, 
+         InfantMortality = InfantMortality.x, InfantMortality_nhw = InfantMortality.y) %>%
   filter(as.integer(RACEHISP) != 7) %>%
-  mutate(IMR_relDisparity = (IMR/IMR_nhw), paired = as.integer(CD)) %>%
-  select(c(CONGRESS2, CD, RACEHISP, IMR_relDisparity, paired)) %>%
+  mutate(IMR_relDisparity = (IMR/IMR_nhw), paired = as.integer(CD),
+         se = sqrt((LiveBirths-InfantMortality)/(InfantMortality*LiveBirths)+(LiveBirths_nhw-InfantMortality_nhw)/(LiveBirths_nhw*InfantMortality_nhw)), 
+         lci = str_trim(format(round(exp(log(IMR_relDisparity)-1.96*se),2),nsmall=2),side="both"), uci = str_trim(format(round(exp(log(IMR_relDisparity)+1.96*se),2),nsmall=2),side="both")) %>%
+  select(c(CONGRESS2, CD, RACEHISP, IMR_relDisparity, paired, se, lci, uci)) %>%
   rename(IMR = IMR_relDisparity)
 
 #Create tables for paper
 IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
          RACEHISP!="Non-Hispanic Other") %>%
-  mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
+  mutate(IMR = str_trim(format(round(IMR,2),nsmall=2),side="both"),
+    RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
            str_replace_all("Hispanic -", "H -") %>%
            str_replace_all("Non-Hispanic Black", "NHB") %>%
            str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
-  pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
+  relocate(IMR, .before=lci)%>%
+  unite("output", IMR:lci, sep=" (")%>%
+  unite("output", output:uci, sep=", ")%>%
+  mutate(output = paste0(output, ")"))%>%
+  pivot_wider(names_from = RACEHISP_CONGRESS, values_from = output, values_fill = NA) %>%
   ungroup() %>%
-  select(-c(CONGRESS2, RACEHISP, paired)) %>%
+  select(-c(CONGRESS2, RACEHISP, paired, se)) %>%
   group_by(CD) %>%
-  summarise_all(sum) %>%
+  summarise_all(list(~.[which.min(is.na(.))])) %>%
   bind_cols({
     IMR_byCD_byRace_absDisparity_2 %>%
       filter(as.integer(CONGRESS2) == 2, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
              RACEHISP!="Non-Hispanic Other") %>%
-      mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
+      mutate(IMR = str_trim(format(round(IMR,2),nsmall=2),side="both"),
+             RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
                str_replace_all("Hispanic -", "H -") %>%
                str_replace_all("Non-Hispanic Black", "NHB") %>%
                str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
-      pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
+      relocate(IMR, .before=lci)%>%
+      unite("output", IMR:lci, sep=" (")%>%
+      unite("output", output:uci, sep=", ")%>%
+      mutate(output = paste0(output, ")"))%>%
+      pivot_wider(names_from = RACEHISP_CONGRESS, values_from = output, values_fill = NA) %>%
       ungroup() %>%
-      select(-c(CONGRESS2, RACEHISP, paired)) %>%
+      select(-c(CONGRESS2, RACEHISP, paired, se)) %>%
       add_row(CD = "CD 19") %>%
       group_by(CD) %>%
-      summarise_all(sum)
+      summarise_all(list(~.[which.min(is.na(.))]))
   }) %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
@@ -252,29 +273,39 @@ write.csv(IMR_byCD_byRace_absDisparity_2_table, "./Final Results/IMR_byCD_byRace
 IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
          RACEHISP!="Non-Hispanic Other") %>%
-  mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
+  mutate(IMR = str_trim(format(round(IMR,2),nsmall=2),side="both"),
+         RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
            str_replace_all("Hispanic -", "H -") %>%
            str_replace_all("Non-Hispanic Black", "NHB") %>%
            str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
-  pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
+  relocate(IMR, .before=lci)%>%
+  unite("output", IMR:lci, sep=" (")%>%
+  unite("output", output:uci, sep=", ")%>%
+  mutate(output = ifelse(is.finite(se), paste0(output, ")"), NA)) %>%
+  pivot_wider(names_from = RACEHISP_CONGRESS, values_from = output, values_fill = NA) %>%
   ungroup() %>%
-  select(-c(CONGRESS2, RACEHISP, paired)) %>%
+  select(-c(CONGRESS2, RACEHISP, paired, se)) %>%
   group_by(CD) %>%
-  summarise_all(sum) %>%
+  summarise_all(list(~.[which.min(is.na(.))])) %>%
   bind_cols({
     IMR_byCD_byRace_relDisparity_2 %>%
       filter(as.integer(CONGRESS2) == 2, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
              RACEHISP!="Non-Hispanic Other") %>%
-      mutate(RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
+      mutate(IMR = str_trim(format(round(IMR,2),nsmall=2),side="both"),
+             RACEHISP_CONGRESS = paste0(RACEHISP, " - ", CONGRESS2) %>%
                str_replace_all("Hispanic -", "H -") %>%
                str_replace_all("Non-Hispanic Black", "NHB") %>%
                str_replace_all("Non-Hispanic Asian American Pacific Islander", "NHAAPI")) %>%
-      pivot_wider(names_from = RACEHISP_CONGRESS, values_from = IMR, values_fill = 0) %>%
+      relocate(IMR, .before=lci)%>%
+      unite("output", IMR:lci, sep=" (")%>%
+      unite("output", output:uci, sep=", ")%>%
+      mutate(output = ifelse(is.finite(se), paste0(output, ")"), NA)) %>%
+      pivot_wider(names_from = RACEHISP_CONGRESS, values_from = output, values_fill = NA) %>%
       ungroup() %>%
-      select(-c(CONGRESS2, RACEHISP, paired)) %>%
+      select(-c(CONGRESS2, RACEHISP, paired, se)) %>%
       add_row(CD = "CD 19") %>%
       group_by(CD) %>%
-      summarise_all(sum)
+      summarise_all(list(~.[which.min(is.na(.))]))
   }) %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
@@ -290,7 +321,8 @@ IMR_byCD_byRace_absDisparity_2_cd116 <- full_join(IMR_byCD_byRace_2_cd116,
   rename(RACEHISP = RACEHISP.x) %>%
   mutate(IMR_absDisparity = (IMR-IMR_nhw)) %>%
   select(c(CONGRESS2, CD, RACEHISP, IMR_absDisparity, paired)) %>%
-  rename(IMR = IMR_absDisparity)
+  rename(IMR = IMR_absDisparity) %>%
+  filter(as.integer(RACEHISP) < 6)
 
 #Save as R Object
 save(IMR_byCD_byRace_absDisparity_2_cd116, file = "./ShinyApp/IMR_byCD_byRace_absDisparity_2_cd116.Rdata")
@@ -365,7 +397,14 @@ write.csv(mld_race_spec, "Final Results/mld_race_spec.csv", row.names = FALSE)
 #Determine what % of DoD were not geocoded
 DOD_total <- filter(death_original_despair, DESPAIR==1)%>%
   mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
+
+DOD_total_byYear <- DOD_total %>% group_by(year) %>% summarise(tot = n())
+
 DOD_nogeo <- filter(DOD_total, is.na(GEOID10) | char < 10)
+
+DOD_nogeo_byYear <- DOD_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
+  inner_join(DOD_total_byYear) %>% mutate(pct = n/tot * 100)
+
 nrow(DOD_nogeo)/nrow(DOD_total)*100
 
 
@@ -515,19 +554,6 @@ DOD_byRaceCD_2_cd116_details <- left_join(DOD_byRaceCD_deaths_2_cd116, populatio
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3)
 
-#Mortality Rates - Combined congresses - Wider
-# DOD_byRaceSexCD_2_wider <- DOD_byRaceSexCD_2 %>%
-#   mutate(SEX_AGE = paste(SEX, AGE_CAT_EDUC)) %>%
-#   pivot_wider(names_from = SEX_AGE, values_from = MR, values_fill = 0) %>%
-#   rename(m_25_34 = "Male 25 to 34 years", m_35_44 = "Male 35 to 44 years", m_45_64 = "Male 45 to 64 years",
-#          f_25_34 = "Female 25 to 34 years", f_35_44 = "Female 35 to 44 years", f_45_64 = "Female 45 to 64 years") %>%
-#   group_by(CD, CONGRESS2, RACE) %>%
-#   summarise("Male 25 to 34 years" = sum(m_25_34), "Male 35 to 44 years" = sum(m_35_44), "Male 45 to 64 years" = sum(m_45_64),
-#             "Female 25 to 34 years" = sum(f_25_34), "Female 35 to 44 years" = sum(f_35_44), "Female 45 to 64 years" = sum(f_45_64))
-
-#Export to CSV
-# write.csv(DOD_byRaceSexCD_2_wider, "C:/Users/ga437/OneDrive - Drexel University/Congressional_Districts_BRFSS/Anfuso_Results/DOD By Race.csv", row.names = FALSE)
-
 #Mortality Rates - White/Non-White 
 DOD_byRace2SexCD_2 <- left_join(DOD_byRace2SexCD_deaths_2, population_byRace2SexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE2, AGE_CAT_EDUC) %>%
@@ -604,9 +630,23 @@ DOD_byRaceSexCD_white_2 <- inner_join(DOD_byRaceSexCD_deaths_white_2, population
   mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
+#Combined congresses - no sex
+DOD_byRaceCD_white_2 <- inner_join(DOD_byRaceSexCD_deaths_white_2, population_byRaceSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
+  filter(!is.na(Population))
+
 #Combined congresses cd116
 DOD_byRaceSexCD_white_2_cd116 <- inner_join(DOD_byRaceSexCD_deaths_white_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
+  filter(!is.na(Population))
+
+#Combined congresses cd116 - no sex
+DOD_byRaceCD_white_2_cd116 <- inner_join(DOD_byRaceSexCD_deaths_white_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
@@ -628,15 +668,34 @@ DOD_byRaceSexCD_absDisparity <- full_join(DOD_byRaceSexCD,
   rename(RACE = "RACE.x")
 
 #Combined congresses
-DOD_byRaceSexCD_absDisparity_2 <- full_join(DOD_byRaceSexCD_2, 
+DOD_byRaceSexCD_absDisparity_2 <- full_join(DOD_byRaceSexCD_2_details, 
                                             DOD_byRaceSexCD_white_2, 
                                             c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
-  mutate(MR_absDisparity = (MR-MR_white)) %>%
-  select(-c("DOD", "Population", "DOD", "RACE.y", "MR", "MR_white")) %>%
-  rename(RACE = "RACE.x", MR = "MR_absDisparity")
+  rename(RACE = RACE.x, DOD = DOD.x, DOD_white= DOD.y, Population = Population.x, Population_white = Population.y) %>%
+  filter(as.integer(RACE) < 5) %>%
+  mutate(MR_absDisparity = (MR-MR_white), MR_raw = MR/1000, MR_white_raw = MR_white/1000,
+         se = sqrt(MR_raw*(1-MR_raw)/Population + MR_white_raw*(1-MR_white_raw)/Population_white)*1000, lci = str_trim(format(round(MR_absDisparity-1.96*se,2),nsmall=2),side="both"),
+         uci = str_trim(format(round(MR_absDisparity+1.96*se,2),nsmall=2),side="both")) %>%
+  select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
+  rename(MR = MR_absDisparity)
 
 #Save as R Object
 save(DOD_byRaceSexCD_absDisparity_2, file = "./ShinyApp/DOD_byRaceSexCD_absDisparity_2.Rdata")
+
+#Combined congresses - no sex
+DOD_byRaceCD_absDisparity_2 <- full_join(DOD_byRaceCD_2_details, 
+                                            DOD_byRaceCD_white_2, 
+                                            c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
+  rename(RACE = RACE.x, DOD = DOD.x, DOD_white= DOD.y, Population = Population.x, Population_white = Population.y) %>%
+  filter(as.integer(RACE) < 5) %>%
+  mutate(MR_absDisparity = (MR-MR_white), MR_raw = MR/1000, MR_white_raw = MR_white/1000,
+         se = sqrt(MR_raw*(1-MR_raw)/Population + MR_white_raw*(1-MR_white_raw)/Population_white)*1000, lci = str_trim(format(round(MR_absDisparity-1.96*se,2),nsmall=2),side="both"),
+         uci = str_trim(format(round(MR_absDisparity+1.96*se,2),nsmall=2),side="both")) %>%
+  select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
+  rename(MR = MR_absDisparity)
+
+#Save as R Object
+save(DOD_byRaceCD_absDisparity_2, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2.Rdata")
 
 #Abs disparities - cd116 boundaries
 DOD_byRaceSexCD_absDisparity_2_cd116 <- full_join(DOD_byRaceSexCD_2_cd116, 
@@ -648,6 +707,22 @@ DOD_byRaceSexCD_absDisparity_2_cd116 <- full_join(DOD_byRaceSexCD_2_cd116,
 
 #Save as R Object
 save(DOD_byRaceSexCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byRaceSexCD_absDisparity_2_cd116.Rdata")
+
+#Abs disparities - cd116 boundaries - no sex
+DOD_byRaceCD_absDisparity_2_cd116 <- full_join(DOD_byRaceCD_2_cd116_details, 
+                                                  DOD_byRaceCD_white_2_cd116, 
+                                                  c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
+  rename(RACE = RACE.x, DOD = DOD.x, DOD_white= DOD.y, Population = Population.x, Population_white = Population.y) %>%
+  filter(as.integer(RACE) < 5) %>%
+  mutate(MR_absDisparity = (MR-MR_white)) %>%
+  mutate(MR_absDisparity = (MR-MR_white), MR_raw = MR/1000, MR_white_raw = MR_white/1000,
+         se = sqrt(MR_raw*(1-MR_raw)/Population + MR_white_raw*(1-MR_white_raw)/Population_white)*1000, lci = str_trim(format(round(MR_absDisparity-1.96*se,2),nsmall=2),side="both"),
+         uci = str_trim(format(round(MR_absDisparity+1.96*se,2),nsmall=2),side="both")) %>%
+  select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
+  rename(MR = MR_absDisparity)
+
+#Save as R Object
+save(DOD_byRaceCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2_cd116.Rdata")
 
 ################################################################################
 
@@ -792,6 +867,13 @@ DOD_byEducSexCD_college_2_cd116 <- inner_join(DOD_byEducSexCD_deaths_college_2_c
   mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
+#Cd116 - no sex
+DOD_byEducCD_college_2_cd116 <- inner_join(DOD_byEducSexCD_deaths_college_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
+  group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
+  filter(!is.na(Population))
+
 #Absolute disparity by CD and Education
 DOD_byEducSexCD_absDisparity <- full_join(DOD_byEducSexCD, 
                                        DOD_byEducSexCD_college,
@@ -815,10 +897,16 @@ save(DOD_byEducSexCD_absDisparity_2, file = "./ShinyApp/DOD_byEducSexCD_absDispa
 DOD_byEducCD_absDisparity_2 <- full_join(DOD_byEducCD_2_details, 
                                          DOD_byEducCD_college_2,
                                          c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
-  mutate(MR_absDisparity = (MR-MR_college), paired = as.integer(CD)) %>%
-  rename(EDUC = "EDUC.x") %>%
-  select(-c(DOD.x, Population.x, MR, EDUC.y, Population.y, MR_college, paired.y, DOD.y, paired.x)) %>%
-  filter(as.integer(EDUC)!=4)
+  rename(EDUC = EDUC.x, DOD = DOD.x, DOD_college = DOD.y, Population = Population.x, Population_college = Population.y) %>%
+  filter(as.integer(EDUC) < 5) %>%
+  mutate(MR_absDisparity = (MR-MR_college), MR_raw = MR/1000, MR_college_raw = MR_college/1000,
+         se = sqrt(MR_raw*(1-MR_raw)/Population + MR_college_raw*(1-MR_college_raw)/Population_college)*1000, lci = str_trim(format(round(MR_absDisparity-1.96*se,2),nsmall=2),side="both"),
+         uci = str_trim(format(round(MR_absDisparity+1.96*se,2),nsmall=2),side="both"), paired = as.integer(CD)) %>%
+  select(c(CONGRESS2, CD, AGE_CAT_EDUC, EDUC, MR_absDisparity, paired, se, lci, uci)) %>%
+  rename(MR = MR_absDisparity)
+
+#Save as R Object
+save(DOD_byEducCD_absDisparity_2, file = "./ShinyApp/DOD_byEducCD_absDisparity_2.Rdata")
 
 #Relative disparities
 DOD_byEducSexCD_relDisparity_2 <- full_join(DOD_byEducSexCD_2, 
@@ -832,13 +920,17 @@ DOD_byEducSexCD_relDisparity_2 <- full_join(DOD_byEducSexCD_2,
 DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details, 
                                             DOD_byEducCD_college_2,
                                             c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
-  mutate(MR_relDisparity = (MR/MR_college), paired = as.integer(CD)) %>%
-  rename(EDUC = "EDUC.x") %>%
-  select(-c(DOD.x, Population.x, MR, EDUC.y, Population.y, MR_college, paired.y, DOD.y, paired.x)) %>%
-  filter(as.integer(EDUC)!=4)
+  rename(EDUC = EDUC.x, Population = Population.x, Population_college = Population.y, 
+         DOD = DOD.x, DOD_college = DOD.y) %>%
+  filter(as.integer(EDUC)!=4) %>%
+  mutate(MR_relDisparity = (MR/MR_college), paired = as.integer(CD),
+         se = sqrt((Population-DOD)/(DOD*Population)+(Population_college-DOD_college)/(Population_college*DOD_college)), 
+         lci = str_trim(format(round(exp(log(MR_relDisparity)-1.96*se),2),nsmall=2),side="both"), 
+         uci = str_trim(format(round(exp(log(MR_relDisparity)+1.96*se),2),nsmall=2),side="both")) %>%
+  select(c(CONGRESS2, CD, EDUC, AGE_CAT_EDUC, MR_relDisparity, paired, se, lci, uci)) %>%
+  rename(MR = MR_relDisparity)
 
 #Combined congress - cd116
-
 DOD_byEducSexCD_absDisparity_2_cd116 <- full_join(DOD_byEducSexCD_2_cd116, 
                                             DOD_byEducSexCD_college_2_cd116,
                                             c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
@@ -846,8 +938,20 @@ DOD_byEducSexCD_absDisparity_2_cd116 <- full_join(DOD_byEducSexCD_2_cd116,
   select(-c("EDUC.y", "DOD", "Population")) %>%
   rename(EDUC = "EDUC.x")
 
+#Combined congress - cd116 - no sex
+DOD_byEducCD_absDisparity_2_cd116 <- full_join(DOD_byEducCD_2_cd116_details, 
+                                                  DOD_byEducCD_college_2_cd116,
+                                                  c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
+  rename(EDUC = EDUC.x, DOD = DOD.x, DOD_college = DOD.y, Population = Population.x, Population_college = Population.y) %>%
+  filter(as.integer(EDUC) < 5) %>%
+  mutate(MR_absDisparity = (MR-MR_college), MR_raw = MR/1000, MR_college_raw = MR_college/1000,
+         se = sqrt(MR_raw*(1-MR_raw)/Population + MR_college_raw*(1-MR_college_raw)/Population_college)*1000, lci = str_trim(format(round(MR_absDisparity-1.96*se,2),nsmall=2),side="both"),
+         uci = str_trim(format(round(MR_absDisparity+1.96*se,2),nsmall=2),side="both"), paired = as.integer(CD)) %>%
+  select(c(CONGRESS2, CD, AGE_CAT_EDUC, EDUC, MR_absDisparity, paired, se, lci, uci)) %>%
+  rename(MR = MR_absDisparity)
+
 #Save as R Object
-save(DOD_byEducSexCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byEducSexCD_absDisparity_2_cd116.Rdata")
+save(DOD_byEducCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byEducCD_absDisparity_2_cd116.Rdata")
 
 #Create table for paper
 DOD_byEducSexCD_absDisparity_2_table <- DOD_byEducSexCD_absDisparity_2 %>%
@@ -893,33 +997,45 @@ write.csv(DOD_byEducSexCD_absDisparity_2_table, "./Final Results/DOD_byEducSexCD
 #Create table for paper - no sex
 DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
-  mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+  mutate(
+    MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
+    EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
            str_replace_all("Less than High School", "LHS") %>%
            str_replace_all("High School", "HS") %>%
            str_replace_all("Some College/Associate Degree", "SCAD") %>%
            str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
-  pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_absDisparity, values_fill = 0) %>%
+  relocate(MR, .before=lci)%>%
+  unite("output", MR:lci, sep=" (")%>%
+  unite("output", output:uci, sep=", ")%>%
+  mutate(output = paste0(output, ")"))%>%
+  pivot_wider(names_from = EDUC_CONGRESS, values_from = output, values_fill = NA) %>%
   ungroup() %>%
-  select(-c(CONGRESS2, EDUC, paired)) %>%
+  select(-c(CONGRESS2, EDUC, paired, se)) %>%
   group_by(CD, AGE_CAT_EDUC) %>%
-  summarise_all(sum) %>%
+  summarise_all(list(~.[which.min(is.na(.))])) %>%
   arrange(AGE_CAT_EDUC, CD) %>%
   bind_cols({
     DOD_byEducCD_absDisparity_2 %>%
       filter(as.integer(CONGRESS2) == 2, as.integer(EDUC) < 4) %>%
-      mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+      mutate(
+        MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
+        EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
                str_replace_all("Less than High School", "LHS") %>%
                str_replace_all("High School", "HS") %>%
                str_replace_all("Some College/Associate Degree", "SCAD") %>%
                str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
-      pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_absDisparity, values_fill = 0) %>%
+      relocate(MR, .before=lci)%>%
+      unite("output", MR:lci, sep=" (")%>%
+      unite("output", output:uci, sep=", ")%>%
+      mutate(output = paste0(output, ")"))%>%
+      pivot_wider(names_from = EDUC_CONGRESS, values_from = output, values_fill = NA) %>%
       ungroup() %>%
-      select(-c(CONGRESS2, EDUC, paired)) %>%
+      select(-c(CONGRESS2, EDUC, paired, se)) %>%
       add_row(CD = "CD 19", AGE_CAT_EDUC = "25 to 34 years") %>%
       add_row(CD = "CD 19", AGE_CAT_EDUC = "35 to 44 years") %>%
       add_row(CD = "CD 19", AGE_CAT_EDUC = "45 to 64 years") %>%
       group_by(CD, AGE_CAT_EDUC) %>%
-      summarise_all(sum) %>%
+      summarise_all(list(~.[which.min(is.na(.))])) %>%
       arrange(AGE_CAT_EDUC, CD) %>%
       ungroup() %>%
       select(-c(CD, AGE_CAT_EDUC))
@@ -972,36 +1088,48 @@ write.csv(DOD_byEducSexCD_relDisparity_2_table, "./Final Results/DOD_byEducSexCD
 #Create table for paper - relative disparity - no sex
 DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
-  mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+  mutate(
+    MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
+    EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
            str_replace_all("Less than High School", "LHS") %>%
            str_replace_all("High School", "HS") %>%
            str_replace_all("Some College/Associate Degree", "SCAD") %>%
            str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
-  pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_relDisparity, values_fill = 0) %>%
+  relocate(MR, .before=lci)%>%
+  unite("output", MR:lci, sep=" (")%>%
+  unite("output", output:uci, sep=", ")%>%
+  mutate(output = ifelse(is.finite(se), paste0(output, ")"), NA)) %>%
+  pivot_wider(names_from = EDUC_CONGRESS, values_from = output, values_fill = NA) %>%
   ungroup() %>%
-  select(-c(paired, CONGRESS2, EDUC)) %>%
+  select(-c(paired, CONGRESS2, EDUC, se)) %>%
   group_by(CD, AGE_CAT_EDUC) %>%
-  summarise_all(sum) %>%
+  summarise_all(list(~.[which.min(is.na(.))])) %>%
   arrange(AGE_CAT_EDUC, CD) %>%
   bind_cols({
     DOD_byEducCD_relDisparity_2 %>%
       filter(as.integer(CONGRESS2) == 2, as.integer(EDUC) < 4) %>%
-      mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
+      mutate(
+        MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
+        EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
                str_replace_all("Less than High School", "LHS") %>%
                str_replace_all("High School", "HS") %>%
                str_replace_all("Some College/Associate Degree", "SCAD") %>%
                str_replace_all("Bachelor/Master/Doctorate/Professional Degree", "BMDP")) %>%
-      pivot_wider(names_from = EDUC_CONGRESS, values_from = MR_relDisparity, values_fill = 0) %>%
+      relocate(MR, .before=lci)%>%
+      unite("output", MR:lci, sep=" (")%>%
+      unite("output", output:uci, sep=", ")%>%
+      mutate(output = ifelse(is.finite(se), paste0(output, ")"), NA)) %>%
+      pivot_wider(names_from = EDUC_CONGRESS, values_from = output, values_fill = NA) %>%
       ungroup() %>%
       select(-c(paired, CONGRESS2, EDUC)) %>%
       add_row(CD = "CD 19", AGE_CAT_EDUC = "25 to 34 years") %>%
       add_row(CD = "CD 19", AGE_CAT_EDUC = "35 to 44 years") %>%
       add_row(CD = "CD 19", AGE_CAT_EDUC = "45 to 64 years") %>%
       group_by(CD, AGE_CAT_EDUC) %>%
-      summarise_all(sum) %>%
+      summarise_all(list(~.[which.min(is.na(.))])) %>%
       arrange(AGE_CAT_EDUC, CD) %>%
       ungroup() %>%
-      select(-c(CD, AGE_CAT_EDUC))
+      select(-c(CD, AGE_CAT_EDUC, se))
   })
 
 #Write to csv
@@ -1235,20 +1363,20 @@ IMR_Map_cd113_114
 #IMR Maps - Combined Congresses
 IMR_Maps_2 <- ggplot(IMR_Maps_byCD_2) +
   geom_sf(aes(fill = jenks), lwd = .1) + 
-  #geom_sf(data = cities) +
-  #geom_point(data = cities, aes(x = lon, y = lat)) +
+  annotate("point", x = -75.1652, y = 39.9526, colour = "black", size = 2) +
+  annotate("point", x = -79.9959, y = 40.4406, colour = "black", size = 2) +
+  coord_sf(default_crs = sf::st_crs(4326)) +
   theme_void() +
   theme(axis.title = element_blank(), axis.text = element_blank(), 
         axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5, vjust = 3),
-        legend.position = "bottom", strip.text = element_text(size = 15), 
-        legend.text = element_text(size = 15), legend.title = element_text(size = 15)) + 
+        legend.position = "bottom", strip.text = element_text(size = 20), 
+        legend.text = element_text(size = 20), legend.title = element_text(size = 20)) + 
   facet_wrap(~ CONGRESS2, ncol = 1) +
   guides(fill=guide_legend(nrow=2, byrow = T)) +
   scale_fill_manual(values = colorRampPalette(colors = c("white", "red"))(5))+
   labs(fill = "IMR per 1,000 Live Births")
 IMR_Maps_2
-ggsave(IMR_Maps_2, file=paste0(results_folder, "IMR_Maps_2.png"), device = agg_png, res = 300, units = "in",
-       width = 10, height = 7, dpi = 300)
+
 ################################################################################
 
 #Combined Congresses
@@ -1271,9 +1399,6 @@ IMR_byCD_byRace_Plots_2 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP)
   facet_wrap(~ CONGRESS2, ncol = 1) +
   coord_flip()
 IMR_byCD_byRace_Plots_2
-ggsave(IMR_byCD_byRace_Plots_2, file=paste0(results_folder, "IMR_byCD_byRace_Plots_2.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
-ggplotly(IMR_byCD_byRace_Plots_2)
 
 #CD111-CD112
 IMR_byCD_byRace_Plots_cd111_112 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 1),
@@ -1293,8 +1418,6 @@ IMR_byCD_byRace_Plots_cd111_112 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(R
   labs(color = "Race/Hispanic Origin") + 
   coord_flip()
 IMR_byCD_byRace_Plots_cd111_112
-ggsave(IMR_byCD_byRace_Plots_cd111_112, file=paste0(results_folder, "IMR_byCD_byRace_Plots_cd111_112.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #CD113-CD114
 IMR_byCD_byRace_Plots_cd113_114 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 2),
@@ -1314,8 +1437,6 @@ IMR_byCD_byRace_Plots_cd113_114 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(R
   labs(color = "Race/Hispanic Origin") + 
   coord_flip()
 IMR_byCD_byRace_Plots_cd113_114
-ggsave(IMR_byCD_byRace_Plots_cd113_114, file=paste0(results_folder, "IMR_byCD_byRace_Plots_cd113_114.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #Absolute Disparities -- Combined Congresses
 IMR_absDisparity_2 <- ggplot(filter(IMR_byCD_byRace_absDisparity_2, as.integer(RACEHISP) != 2,
@@ -1336,9 +1457,6 @@ IMR_absDisparity_2 <- ggplot(filter(IMR_byCD_byRace_absDisparity_2, as.integer(R
   geom_hline(yintercept = 0, linetype = "dashed") + 
   coord_flip()
 IMR_absDisparity_2
-ggsave(IMR_absDisparity_2, file=paste0(results_folder, "IMR_absDisparity_2.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
-ggplotly(IMR_absDisparity_2)
 
 #CD111 - CD112
 IMR_absDisparity_cd111_112 <- ggplot(filter(IMR_byCD_byRace_absDisparity_2, as.integer(RACEHISP) != 2,
@@ -1358,8 +1476,6 @@ IMR_absDisparity_cd111_112 <- ggplot(filter(IMR_byCD_byRace_absDisparity_2, as.i
   geom_hline(yintercept = 0, linetype = "dashed") + 
   coord_flip()
 IMR_absDisparity_cd111_112
-ggsave(IMR_absDisparity_cd111_112, file=paste0(results_folder, "IMR_absDisparity_cd111_112.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #CD113 - CD114
 IMR_absDisparity_cd113_114 <- ggplot(filter(IMR_byCD_byRace_absDisparity_2, as.integer(RACEHISP) != 2,
@@ -1379,8 +1495,6 @@ IMR_absDisparity_cd113_114 <- ggplot(filter(IMR_byCD_byRace_absDisparity_2, as.i
   geom_hline(yintercept = 0, linetype = "dashed") + 
   coord_flip()
 IMR_absDisparity_cd113_114
-ggsave(IMR_absDisparity_cd113_114, file=paste0(results_folder, "IMR_absDisparity_cd113_114.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 ################################################################################
 #DOD Maps - CD111-CD112
@@ -1395,8 +1509,6 @@ DOD_Map_cd111_112 <- ggplot(filter(DOD_Maps_byCD_2, as.integer(CONGRESS2)==1)) +
   scale_fill_scico(palette = "lajolla") +
   labs(fill = "Mortality Rate, per 10,000 People")
 DOD_Map_cd111_112
-ggsave(DOD_Map_cd111_112, file=paste0(results_folder, "DOD_Map_cd111_112.png"), device = agg_png, res = 300, units = "in",
-       width = 10, height = 7, dpi = 300)
 
 #DOD Maps - CD113-CD114
 DOD_Map_cd113_114 <- ggplot(filter(DOD_Maps_byCD_2, as.integer(CONGRESS2)==2)) +
@@ -1410,24 +1522,23 @@ DOD_Map_cd113_114 <- ggplot(filter(DOD_Maps_byCD_2, as.integer(CONGRESS2)==2)) +
   scale_fill_scico(palette = "lajolla") +
   labs(fill = "Mortality Rate, per 10,000 People")
 DOD_Map_cd113_114
-ggsave(DOD_Map_cd113_114, file=paste0(results_folder, "DOD_Map_cd113_114.png"), device = agg_png, res = 300, units = "in",
-       width = 10, height = 7, dpi = 300)
 
 #DOD Maps - Combined congresses
 DOD_Maps_2 <- ggplot(DOD_Maps_byCD_2) +
   geom_sf(aes(fill = jenks), lwd = .1) +
+  annotate("point", x = -75.1652, y = 39.9526, colour = "black", size = 2) +
+  annotate("point", x = -79.9959, y = 40.4406, colour = "black", size = 2) +
+  coord_sf(default_crs = sf::st_crs(4326)) +
   theme_void() +
   theme(axis.title = element_blank(), axis.text = element_blank(), 
         axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5, vjust = 3),
-        legend.position = "bottom", strip.text = element_blank(),#element_text(size = 15), 
+        legend.position = "bottom", strip.text = element_text(size = 20), 
         legend.text = element_text(size = 20), legend.title = element_text(size = 20)) + 
   facet_wrap(~ CONGRESS2, ncol = 1) +
   guides(fill=guide_legend(nrow=2, byrow = T)) +
   scale_fill_manual(values = colorRampPalette(colors = c("white", "red"))(5))+
   labs(fill = "Mortality Rate, \nper 10,000 People")
 DOD_Maps_2
-ggsave(DOD_Maps_2, file=paste0(results_folder, "DOD_Maps_2.png"), device = agg_png, res = 300, units = "in",
-       width = 10, height = 7, dpi = 300)
 
 ################################################################################
 
@@ -1453,9 +1564,6 @@ DOD_byRaceSexAge_Plot_cd111_112 <- ggplot(filter(DOD_byRaceSexCD_2, as.integer(C
   annotation_logticks(sides="b") + 
   coord_flip()
 DOD_byRaceSexAge_Plot_cd111_112
-ggsave(DOD_byRaceSexAge_Plot_cd111_112, file=paste0(results_folder, "DOD_byRaceSexAge_Plot_cd111_112.png"),  
-       device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
-
 
 #CD111-CD112 - White/Non-White
 DOD_byRace2SexAge_Plot_cd111_112 <- ggplot(filter(DOD_byRace2SexCD_2, as.integer(CONGRESS2) == 1, MR > 0), 
@@ -1476,8 +1584,6 @@ DOD_byRace2SexAge_Plot_cd111_112 <- ggplot(filter(DOD_byRace2SexCD_2, as.integer
   annotation_logticks(sides="b") + 
   coord_flip()
 DOD_byRace2SexAge_Plot_cd111_112
-ggsave(DOD_byRace2SexAge_Plot_cd111_112, file=paste0(results_folder, "DOD_byRace2SexAge_Plot_cd111_112.png"),  
-       device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #CD113-CD114
 DOD_byRaceSexAge_Plot_cd113_114 <- ggplot(filter(DOD_byRaceSexCD_2, as.integer(CONGRESS2) == 2, MR > 0, as.integer(RACE) < 5),
@@ -1500,8 +1606,6 @@ DOD_byRaceSexAge_Plot_cd113_114 <- ggplot(filter(DOD_byRaceSexCD_2, as.integer(C
   annotation_logticks(sides="b") + 
   coord_flip()
 DOD_byRaceSexAge_Plot_cd113_114
-ggsave(DOD_byRaceSexAge_Plot_cd113_114, file=paste0(results_folder, "DOD_byRaceSexAge_Plot_cd113_114.png"),  
-       device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #CD113-CD114 - White/Non-White
 DOD_byRace2SexAge_Plot_cd113_114 <- ggplot(filter(DOD_byRace2SexCD_2, as.integer(CONGRESS2) == 2, MR > 0), 
@@ -1522,8 +1626,6 @@ DOD_byRace2SexAge_Plot_cd113_114 <- ggplot(filter(DOD_byRace2SexCD_2, as.integer
   annotation_logticks(sides="b") + 
   coord_flip()
 DOD_byRace2SexAge_Plot_cd113_114
-ggsave(DOD_byRace2SexAge_Plot_cd113_114, file=paste0(results_folder, "DOD_byRace2SexAge_Plot_cd113_114.png"),  
-       device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #Absolute Disparities by Congress
 #CD111-CD112
@@ -1545,8 +1647,6 @@ DOD_absDisparity_race_cd111_112 <- ggplot(filter(DOD_byRaceSexCD_absDisparity_2,
   geom_hline(yintercept = 0, linetype = "dashed") + 
   coord_flip()
 DOD_absDisparity_race_cd111_112
-ggsave(DOD_absDisparity_race_cd111_112, file=paste0(results_folder, "DOD_absDisparity_race_cd111_112.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #CD113-CD114
 DOD_absDisparity_race_cd113_114 <- ggplot(filter(DOD_byRaceSexCD_absDisparity_2, as.integer(RACE) != 1,
@@ -1567,8 +1667,6 @@ DOD_absDisparity_race_cd113_114 <- ggplot(filter(DOD_byRaceSexCD_absDisparity_2,
   geom_hline(yintercept = 0, linetype = "dashed") + 
   coord_flip()
 DOD_absDisparity_race_cd113_114
-ggsave(DOD_absDisparity_race_cd113_114, file=paste0(results_folder, "DOD_absDisparity_race_cd113_114.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 ################################################################################
 
@@ -1586,16 +1684,15 @@ DOD_byEducSexAge_Plot <- ggplot(filter(DOD_byEducSexCD_2, MR > 0, as.integer(EDU
   facet_nested_wrap(vars(CONGRESS2, AGE_CAT_EDUC, SEX), dir = "v", nrow = 2, ncol = 6) +
   theme_bw() + 
   theme(axis.title = element_text(size = 20), axis.text = element_text(size = 15),
-        legend.position = "bottom", legend.text=element_text(size=15),
-        strip.text = element_text(size = 15), legend.title = element_text(size = 15)) + 
+        legend.position = "bottom", legend.text=element_text(size=20),
+        strip.text = element_text(size = 16, face = "bold"), legend.title = element_blank(),
+        text = element_text(color="black"), strip.background = element_blank()) + 
   guides(color = guide_legend(nrow = 2)) +
   scale_y_continuous(trans = 'log10', breaks = c(1,10,100,1000), limits=c(.1, NA), labels = c(1,10,100,1000)) +
   scale_x_discrete(expand=expansion(mult=c(0.1, 0.05))) +
   annotation_logticks(sides="b") + 
   coord_flip()
 DOD_byEducSexAge_Plot
-ggsave(DOD_byEducSexAge_Plot, file=paste0(results_folder, "DOD_byEducSexAge_Plot.png"),  
-       device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #All years - no sex
 DOD_byEducAge_Plot <- ggplot(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5),
@@ -1610,8 +1707,9 @@ DOD_byEducAge_Plot <- ggplot(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5
   facet_nested_wrap(vars(CONGRESS2, AGE_CAT_EDUC), dir = "h", nrow = 2, ncol = 3) +
   theme_bw() + 
   theme(axis.title = element_text(size = 20), axis.text = element_text(size = 15),
-        legend.position = "bottom", legend.text=element_text(size=15),
-        strip.text = element_text(size = 15), legend.title = element_text(size = 15)) + 
+        legend.position = "bottom", legend.text=element_text(size=20),
+        strip.text = element_text(size = 16, face = "bold"), legend.title = element_blank(),
+        text = element_text(color="black"), strip.background = element_blank()) + 
   guides(color = guide_legend(nrow = 2)) +
   scale_y_continuous(trans = 'log10', breaks = c(1,10,100,1000), limits=c(.1, NA), labels = c(1,10,100,1000)) +
   scale_x_discrete(expand=expansion(mult=c(0.1, 0.05))) +
@@ -1640,8 +1738,6 @@ DOD_byEducSexAge_Plot_cd111_112 <- ggplot(filter(DOD_byEducSexCD_2, as.integer(C
   annotation_logticks(sides="b") + 
   coord_flip()
 DOD_byEducSexAge_Plot_cd111_112
-ggsave(DOD_byEducSexAge_Plot_cd111_112, file=paste0(results_folder, "DOD_byEducSexAge_Plot_cd111_112.png"),  
-       device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #CD113-CD114 
 DOD_byEducSexAge_Plot_cd113_114 <- ggplot(filter(DOD_byEducSexCD_2, as.integer(CONGRESS2) == 2, MR > 0, as.integer(EDUC) < 5),
@@ -1664,8 +1760,6 @@ DOD_byEducSexAge_Plot_cd113_114 <- ggplot(filter(DOD_byEducSexCD_2, as.integer(C
   annotation_logticks(sides="b") + 
   coord_flip()
 DOD_byEducSexAge_Plot_cd113_114
-ggsave(DOD_byEducSexAge_Plot_cd113_114, file=paste0(results_folder, "DOD_byEducSexAge_Plot_cd113_114.png"),  
-       device = agg_png, res = 300, units = "in", width = 10, height = 7, dpi = 300)
 
 #Absolute Disparities by Congress
 DOD_absDisparity_educ_cd111_112 <- ggplot(filter(DOD_byEducSexCD_absDisparity_2, as.integer(EDUC) != 4,
@@ -1686,9 +1780,6 @@ DOD_absDisparity_educ_cd111_112 <- ggplot(filter(DOD_byEducSexCD_absDisparity_2,
   geom_hline(yintercept = 0, linetype = "dashed") + 
   coord_flip()
 DOD_absDisparity_educ_cd111_112
-ggsave(DOD_absDisparity_educ_cd111_112, file=paste0(results_folder, "DOD_absDisparity_educ_cd111_112.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
-ggplotly(DOD_absDisparity_educ_cd111_112)
 
 DOD_absDisparity_educ_cd113_114 <- ggplot(filter(DOD_byEducSexCD_absDisparity_2, as.integer(EDUC) != 4,
                                                  as.integer(EDUC) < 5, as.integer(CONGRESS2) == 2),
@@ -1708,9 +1799,6 @@ DOD_absDisparity_educ_cd113_114 <- ggplot(filter(DOD_byEducSexCD_absDisparity_2,
   geom_hline(yintercept = 0, linetype = "dashed") + 
   coord_flip()
 DOD_absDisparity_educ_cd113_114
-ggsave(DOD_absDisparity_educ_cd113_114, file=paste0(results_folder, "DOD_absDisparity_educ_cd113_114.png"),  device = agg_png, 
-       res = 300, units = "in", width = 10, height = 7, dpi = 300)
-ggplotly(DOD_absDisparity_educ_cd113_114)
 ################################################################################
 
 IMR_DOD <- inner_join(IMR_byCD_2, DOD_byCD_2) %>%
