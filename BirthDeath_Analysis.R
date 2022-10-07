@@ -1282,6 +1282,23 @@ IMR_Maps_byCD_2 <- inner_join(cd_outlines_2, IMR_byCD_2) %>%
 #Save as R Object
 save(IMR_Maps_byCD_2, file = "./ShinyApp/IMR_Maps_byCD_2.Rdata")
 
+#By Congress2
+IMR_111_112 <- IMR_byCD_2 %>%
+  ungroup() %>%
+  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  filter(as.integer(CONGRESS2)==1) %>%
+  select(CD, IMR, jenks)
+
+IMR_113_114 <- IMR_byCD_2 %>%
+  ungroup() %>%
+  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  filter(as.integer(CONGRESS2)==2) %>%
+  select(CD, IMR, jenks)
+
+#Save as CSV
+write.csv(IMR_111_112, "./Final Results/IMR_111_112.csv", row.names = F)
+write.csv(IMR_113_114, "./Final Results/IMR_113_114.csv", row.names = F)
+
 #IMR with CD116 Boundaries
 IMR_Maps_cd116 <- inner_join(cd116, IMR_byCD_2) %>%
   select(-c(InfantMortality, LiveBirths)) %>%
@@ -1305,6 +1322,23 @@ DOD_Maps_byCD_2 <- inner_join(cd_outlines_2, DOD_byCD_2) %>%
 
 #Save as R Object
 save(DOD_Maps_byCD_2, file = "./ShinyApp/DOD_Maps_byCD_2.Rdata")
+
+#By Congress2
+DOD_111_112 <- DOD_byCD_2 %>%
+  ungroup() %>%
+  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  filter(as.integer(CONGRESS2)==1) %>%
+  select(CD, MR, jenks)
+
+DOD_113_114 <- DOD_byCD_2 %>%
+  ungroup() %>%
+  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  filter(as.integer(CONGRESS2)==2) %>%
+  select(CD, MR, jenks)
+
+#Save as CSV
+write.csv(DOD_111_112, "./Final Results/DOD_111_112.csv", row.names = F)
+write.csv(DOD_113_114, "./Final Results/DOD_113_114.csv", row.names = F)
 
 #IMR with CD116 Boundaries
 DOD_Maps_cd116 <- inner_join(cd116, DOD_byCD_2) %>%

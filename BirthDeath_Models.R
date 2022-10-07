@@ -100,6 +100,16 @@ CI_estim_rate_imr_add_fast<-race_IMR%>%
   filter(names!="(Intercept)", names!="pop", names!="RACEHISPNon-Hispanic Other:pop", names != "RACEHISPNon-Hispanic American Indian, Alaska Native:pop",
          names!="RACEHISPUnknown:pop")
 
+race_IMR_TEST<- filter(race_IMR, as.integer(CONGRESS2)==1, as.integer(CD)==18)
+#Do regression 2 ways
+pop_test <- race_IMR_TEST$LiveBirths/1000
+additive_imr_test_1 <- glm(im ~ RACEHISP:pop_test + pop_test, family = poisson(link="identity"), data = race_IMR_TEST)
+save(additive_imr_test_1, file="additive_imr_test_1.Rdata")
+x_test <- model.matrix(im~RACEHISP:pop_test+pop_test, data = race_IMR_TEST)
+y_test<-race_IMR_TEST$im
+additive_imr_test_2 <- fastglm(x=x_test, y=y_test, family="poisson"(link="identity"))
+save(additive_imr_test_2, file="additive_imr_test_2.Rdata")
+
 #Clean for charts
 CI_estim_rate_imr_add_fast_charts <- CI_estim_rate_imr_add_fast %>%
   mutate(RACEHISP=substring(names,9,nchar(names)-4), paired = as.integer(CD))%>%
