@@ -13,12 +13,8 @@ select <- dplyr::select
 
 ################################################################################
 
-#Create variable to house the directory path to create ease during import process
+#Replace with your own directory path
 dir_name <- "//files.drexel.edu\\encrypted\\SOPH\\UHC\\SchnakeMahl_PAVitalStat\\Data\\"
-
-#Set working directory for the data
-setwd("C:/Users/ga437/OneDrive - Drexel University/Documents/Congressional-Districts-2/")
-
 
 ################################################################################
 
@@ -26,38 +22,32 @@ setwd("C:/Users/ga437/OneDrive - Drexel University/Documents/Congressional-Distr
 keep_birth <- c("FILENO", "SEX", "CHILDDOB", "MOTHEDU", "MOTHHISP0315", 
                 "MOTHHISP8902", "MOTHRACE0315", "mothrace7902", "FATHEDU",
                 "FATHHISP0315", "FATHHISP8902", "FATHRACE0315", "fathrace7902", 
-                "BWEIGHT", "LOP", "GEOID10", "RESCNTY", "uniqueID", "year")
+                "GEOID10", "year")
 
 #Import birth data
 birth2010 <- fread(paste0(dir_name, "birthgeo2010.csv")) %>%
-  mutate(RegNum = as.character(RegNum), reszipcln = as.character(reszipcln), 
-         momreszip = as.character(momreszip), year = "2010") %>%
+  mutate(year = "2010") %>%
   select(one_of(keep_birth))
 
 
 birth2011 <- fread(paste0(dir_name, "birthgeo2011.csv")) %>%
-  mutate(RegNum = as.character(RegNum), reszipcln = as.character(reszipcln), 
-         momreszip = as.character(momreszip), year = "2011") %>%
+  mutate(year = "2011") %>%
   select(one_of(keep_birth))
 
 birth2012 <- fread(paste0(dir_name, "birthgeo2012.csv")) %>%
-  mutate(RegNum = as.character(RegNum), reszipcln = as.character(reszipcln), 
-         momreszip = as.character(momreszip), year = "2012") %>%
+  mutate(year = "2012") %>%
   select(one_of(keep_birth))
 
 birth2013 <- fread(paste0(dir_name, "birthgeo2013.csv")) %>%
-  mutate(RegNum = as.character(RegNum), reszipcln = as.character(reszipcln), 
-         momreszip = as.character(momreszip), year = "2013") %>%
+  mutate(year = "2013") %>%
   select(one_of(keep_birth))
 
 birth2014 <- fread(paste0(dir_name, "birthgeo2014.csv")) %>%
-  mutate(RegNum = as.character(RegNum), reszipcln = as.character(reszipcln), 
-         momreszip = as.character(momreszip), year = "2014") %>%
+  mutate(year = "2014") %>%
   select(one_of(keep_birth))
 
 birth2015 <- fread(paste0(dir_name, "birthgeo2015.csv")) %>%
-  mutate(RegNum = as.character(RegNum), reszipcln = as.character(reszipcln), 
-         momreszip = as.character(momreszip), year = "2015") %>%
+  mutate(year = "2015") %>%
   select(one_of(keep_birth))
 
 birth_original <- bind_rows(birth2010, birth2011, birth2012, 
@@ -67,44 +57,44 @@ birth_original_modified <- birth_original %>%
   mutate(
     MOMHISP = case_when(
       #(MOTHHISP8902 == 0) | only works if we have pre-2010 data
-      (MOTHHISP0315 == 1) ~ 1,
+      (MOTHHISP0315 == 1) ~ 1, #Not Hispanic
       #((MOTHHISP8902 >= 1) & (MOTHHISP8902 <= 5) | 
-      (MOTHHISP0315 >= 2) & (MOTHHISP0315 <= 5) ~ 2,
-      #(MOTHHISP8902 == 9) | 
-      (MOTHHISP0315 == 9) ~ 3),
+      (MOTHHISP0315 >= 2) & (MOTHHISP0315 <= 5) ~ 2, #Hispanic
+      #(MOTHHISP8902 == 9) 
+      (MOTHHISP0315 == 9) ~ 3), #Unknown
     DADHISP = case_when(
-      #(FATHHISP8902 == 0) | 
-      (FATHHISP0315 == 1) ~ 1,
-      # ((FATHHISP8902 >= 1) & (FATHHISP8902 <= 5) | 
-      (FATHHISP0315 >= 2) & (FATHHISP0315 <= 5) ~ 2,
-      # (FATHHISP8902 == 9) | 
-      (FATHHISP0315 == 9) ~ 3),
+      #(FATHHISP8902 == 0)  
+      (FATHHISP0315 == 1) ~ 1, #Not Hispanic
+      # ((FATHHISP8902 >= 1) & (FATHHISP8902 <= 5) 
+      (FATHHISP0315 >= 2) & (FATHHISP0315 <= 5) ~ 2, #Hispanic
+      # (FATHHISP8902 == 9) 
+      (FATHHISP0315 == 9) ~ 3), #Unknown
     HISP = case_when(
       !is.na(MOMHISP) ~ MOMHISP,
       is.na(MOMHISP) ~ DADHISP) %>%
-      factor(labels = c("Hispanic", "Non-Hispanic", "Unknown")),
+      factor(labels = c("Non-Hispanic", "Hispanic", "Unknown")),
     MOMRACE = case_when(
-      # (mothrace7902 == 1) | 
-      (MOTHRACE0315 == 1)  ~ 1,
-      # (mothrace7902 == 2) | 
-      (MOTHRACE0315 == 2)  ~ 2,
-      # (mothrace7902 == 3) | 
-      (MOTHRACE0315 == 3)  ~ 3, 
+      # (mothrace7902 == 1) 
+      (MOTHRACE0315 == 1)  ~ 1, #White
+      # (mothrace7902 == 2)  
+      (MOTHRACE0315 == 2)  ~ 2, #Black
+      # (mothrace7902 == 3) 
+      (MOTHRACE0315 == 3)  ~ 3, #American Indian Alaska Native 
       # (mothrace7902 >=4 & mothrace7902<= 6) | (mothrace7902 == 8)
-      (MOTHRACE0315 >= 4 & MOTHRACE0315 <= 14) ~ 4,
+      (MOTHRACE0315 >= 4 & MOTHRACE0315 <= 14) ~ 4, #AAPI
       # (mothrace7902 == 7 | mothrace7902 == 0 | is.na(mothrace7902))
-      (MOTHRACE0315 >= 15 | is.na(MOTHRACE0315)) ~ 5),
+      (MOTHRACE0315 >= 15 | is.na(MOTHRACE0315)) ~ 5), #Other
     DADRACE = case_when(
-      # (fathrace7902 == 1)  |
-      (FATHRACE0315 == 1) ~ 1,
-      # (fathrace7902 == 2) | 
-      (FATHRACE0315 == 2) ~ 2,
-      # (fathrace7902 == 3) | 
-      (FATHRACE0315 == 3) ~ 3, 
-      # (fathrace7902 >=4 & fathrace7902<= 6) | (fathrace7902 == 8) |
-      (FATHRACE0315 >= 4 & FATHRACE0315 <= 14) ~ 4,
-      # (fathrace7902 == 7 | fathrace7902 == 0 | is.na(fathrace7902)) | 
-      (FATHRACE0315 >= 15 | is.na(FATHRACE0315)) ~ 5),
+      # (fathrace7902 == 1)
+      (FATHRACE0315 == 1) ~ 1, #White
+      # (fathrace7902 == 2) 
+      (FATHRACE0315 == 2) ~ 2, #Black
+      # (fathrace7902 == 3)
+      (FATHRACE0315 == 3) ~ 3, #American Indian Alaska Native 
+      # (fathrace7902 >=4 & fathrace7902<= 6) | (fathrace7902 == 8) 
+      (FATHRACE0315 >= 4 & FATHRACE0315 <= 14) ~ 4, #AAPIT
+      # (fathrace7902 == 7 | fathrace7902 == 0 | is.na(fathrace7902)) 
+      (FATHRACE0315 >= 15 | is.na(FATHRACE0315)) ~ 5), #Other
     RACE = case_when(
       !is.na(MOMRACE) ~ MOMRACE,
       is.na(MOMRACE) ~ DADRACE) %>%
@@ -113,29 +103,29 @@ birth_original_modified <- birth_original %>%
         labels = c("White", "Black", "American Indian, Alaska Native", 
                    "Asian American Pacific Islander", "Other")),
     RACE2 = case_when(
-      as.integer(RACE) == 1 ~ 1,
-      as.integer(RACE) > 1 ~ 2) %>%
+      as.integer(RACE) == 1 ~ 1, #White
+      as.integer(RACE) > 1 ~ 2) %>% #Non-White
       factor(
         levels = c(1,2),
         labels = c("White", "Non-White")),
     RACEHISP = case_when(
-      as.integer(HISP) == 2 ~ 1,
-      as.integer(HISP) == 1 & as.integer(RACE) == 1 ~ 2,
-      as.integer(HISP) == 1 & as.integer(RACE) == 2 ~ 3,
-      as.integer(HISP) == 1 & as.integer(RACE) == 3 ~ 4,
-      as.integer(HISP) == 1 & as.integer(RACE) == 4 ~ 5,
-      as.integer(HISP) == 1 & as.integer(RACE) == 5 ~ 6,
-      as.integer(HISP) == 3 ~ 7) %>%
+      as.integer(HISP) == 2 ~ 1, #Hispanic
+      as.integer(HISP) == 1 & as.integer(RACE) == 1 ~ 2, #Non-Hispanic White
+      as.integer(HISP) == 1 & as.integer(RACE) == 2 ~ 3, #Non-Hispanic Black
+      as.integer(HISP) == 1 & as.integer(RACE) == 3 ~ 4, #Non-Hispanic American Indian Alaska Native
+      as.integer(HISP) == 1 & as.integer(RACE) == 4 ~ 5, #Non-Hispanic AAPI
+      as.integer(HISP) == 1 & as.integer(RACE) == 5 ~ 6, #Non-Hispanic Other
+      as.integer(HISP) == 3 ~ 7) %>% #Unknown
       factor(
         levels = c(1,2,3,4,5,6,7),
         labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Black", 
                    "Non-Hispanic American Indian, Alaska Native",
                    "Non-Hispanic Asian American Pacific Islander", "Non-Hispanic Other", "Unknown")),
     RACEHISP2 = case_when(
-      (as.integer(HISP) == 2) ~ 1,
-      (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2,
-      (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3,
-      (as.integer(HISP) == 3) ~ 4) %>%
+      (as.integer(HISP) == 2) ~ 1, #Hispanic
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2, #Non-Hispanic White
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3, #Non-Hispanic Non-White
+      (as.integer(HISP) == 3) ~ 4) %>% #Unknown
       factor(
         levels = c(1,2,3,4),
         labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Non-White", "Unknown")),
@@ -156,16 +146,20 @@ birth_original_modified <- birth_original %>%
         labels = c("111 - 112 (2010 - 2012)",
                    "113 - 114 (2013 - 2015)")))
 
+#See how unknown entries we have with respect to race-ethnicity
 birth_original_modified_noracehisp <- birth_original_modified %>%
   filter(RACEHISP == "Unknown")
 
+#What % of the data is unknown with respect to race-ethnicity?
 birth_original_modified_racehisp_pct <- nrow(birth_original_modified_noracehisp)/nrow(birth_original_modified) * 100
 
+#What % of the birth data is not georeferenced?
+birth_nogeo <- nrow(filter(birth_original, is.na(GEOID10) | nchar(as.numeric(GEOID10)) < 10))/nrow(birth_original) * 100
+
 #Columns we need for death files
-keep_death <- c("FILENO", "SEX", "AGE6011", "AGE1215", "AGE", "Age_death", "DOB", "PLCDTH", "HISPANIC", 
-                "RACE9011", "race1215", "EDUC8711", "EDUC1215", "EDUC", 
-                "MARRIED", "MANDEATH", "CODICD10", "INFMORT", 
-                "CTYDEATH","GEOID10", "uniqueID", "year")
+keep_death <- c("SEX", "AGE6011", "AGE1215", "AGE", "Age_death", "DOB", "HISPANIC", 
+                "RACE9011", "race1215", "EDUC8711", "EDUC1215", "EDUC", "CODICD10", 
+                "INFMORT", "GEOID10", "year")
 
 #Import death data
 death2010 <- fread(paste0(dir_name, "deathgeo2010.csv")) %>%
@@ -201,69 +195,69 @@ death2015 <- fread(paste0(dir_name, "deathgeo2015.csv")) %>%
 death_original <- bind_rows(death2010, death2011, death2012, 
                             death2013, death2014, death2015)
 
-birth_nogeo <- nrow(filter(birth_original, is.na(GEOID10) | nchar(as.numeric(GEOID10)) < 10))/nrow(birth_original) * 100
+#What % of the death data is not georeferenced?
 death_nogeo <- nrow(filter(death_original, is.na(GEOID10) | nchar(as.numeric(GEOID10)) < 10))/nrow(death_original) * 100
 
 #Add despair indicator for deaths
 death_original_despair <- death_original %>%
   mutate(
     EDUC = case_when(
-      EDUC == 0 ~ 1,
-      EDUC == 1 ~ 2, 
-      EDUC == 2 ~ 3,
-      EDUC == 3 ~ 4,
-      TRUE ~ 5) %>%
+      EDUC == 0 ~ 1, #Less than HS
+      EDUC == 1 ~ 2, #HS
+      EDUC == 2 ~ 3, #Some College
+      EDUC == 3 ~ 4, #College+
+      TRUE ~ 5) %>% #Unknown
       factor(
         levels = c(1,2,3,4,5),
         labels = c("Less than High School", "High School", "Some College/Associate Degree",
                    "Bachelor/Master/Doctorate/Professional Degree", "Unknown")),
     RACE = case_when(
       RACE9011 == 1 | 
-        race1215 == 01 ~ 1,
+        race1215 == 01 ~ 1, #White
       RACE9011 == 2 | 
-        race1215 == 02 ~ 2,
+        race1215 == 02 ~ 2, #Black
       RACE9011 == 3 | 
-        race1215 == 03 ~ 3,
+        race1215 == 03 ~ 3, #American Indian Alaska Native
       ((RACE9011 >= 4 & RACE9011 <= 8) | RACE9011 == 0) | 
-        (race1215 >= 04 & race1215 <= 14) ~ 4,
+        (race1215 >= 04 & race1215 <= 14) ~ 4, #AAPI
       RACE9011 == 9 | is.na(RACE9011) | 
-        is.na(race1215) | race1215>= 15 ~ 5) %>%
+        is.na(race1215) | race1215>= 15 ~ 5) %>% #Other
       factor(
         levels = c(1,2,3,4,5),
         labels = c("White", "Black", 
                    "American Indian, Alaska Native", "Asian American Pacific Islander", "Other")),
     RACE2 = case_when(
-      as.integer(RACE) == 1 ~ 1,
-      as.integer(RACE) > 1 ~ 2) %>%
+      as.integer(RACE) == 1 ~ 1, #White
+      as.integer(RACE) > 1 ~ 2) %>% #Non-White
       factor(
         levels = c(1,2),
         labels = c("White", "Non-White")),
     HISP = case_when(
       #Non-Hispanic
-      HISPANIC == 1 ~ 1,
+      HISPANIC == 1 ~ 1, #Non-Hispanic
       #Hispanic
-      HISPANIC >= 2 & HISPANIC <= 5 ~ 2,
+      HISPANIC >= 2 & HISPANIC <= 5 ~ 2, #Hispanic
       #Unknown
-      HISPANIC == 9 ~ 3),
+      HISPANIC == 9 ~ 3), #Unknown
     HISP = factor(HISP, labels = c("Non-Hispanic", "Hispanic", "Unknown")),
     RACEHISP = case_when(
-      (as.integer(HISP) == 2) ~ 1,
-      (as.integer(HISP) == 1) & (as.integer(RACE) == 1) ~ 2,
-      (as.integer(HISP) == 1) & (as.integer(RACE) == 2) ~ 3,
-      (as.integer(HISP) == 1) & (as.integer(RACE) == 3) ~ 4,
-      (as.integer(HISP) == 1) & (as.integer(RACE) == 4) ~ 5,
-      (as.integer(HISP) == 1) & (as.integer(RACE) == 5) ~ 6,
-      (as.integer(HISP) == 3) ~ 7) %>%
+      (as.integer(HISP) == 2) ~ 1, #Hispanic
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 1) ~ 2, #Non-Hispanic White
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 2) ~ 3, #Non-Hispanic Black
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 3) ~ 4, #Non-Hispanic American Indian Alaska Native
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 4) ~ 5, #Non-Hispanic AAPI
+      (as.integer(HISP) == 1) & (as.integer(RACE) == 5) ~ 6, #Non-Hispanic Other
+      (as.integer(HISP) == 3) ~ 7) %>% #Unknown
       factor(
         levels = c(1,2,3,4,5,6,7),
         labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Black", 
                    "Non-Hispanic American Indian, Alaska Native",
                    "Non-Hispanic Asian American Pacific Islander", "Non-Hispanic Other", "Unknown")),
     RACEHISP2 = case_when(
-      (as.integer(HISP) == 2) ~ 1,
-      (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2,
-      (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3,
-      (as.integer(HISP) == 3) ~ 4) %>%
+      (as.integer(HISP) == 2) ~ 1, #Hispanic
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2, #Non-Hispanic White
+      (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3, #Non-Hispanic Non-White
+      (as.integer(HISP) == 3) ~ 4) %>% #Unknown
       factor(
         levels = c(1,2,3,4),
         labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Non-White", "Unknown")),
@@ -283,15 +277,46 @@ death_original_despair <- death_original %>%
       TRUE ~ 0)
   )
 
+#How many DoD observations are missing race-ethnicity?
 death_original_despair_noracehisp <- death_original_despair %>%
   filter(RACEHISP == "Unknown")
 
+#What % of DoD observations are missing race-ethnicity?
 death_original_despair_noracehisp_pct <- nrow(death_original_despair_noracehisp)/nrow(death_original_despair) * 100
 
+#How many DoD observations are missing education data?
 death_original_despair_noeduc <- death_original_despair %>%
   filter(EDUC == "Unknown" | is.na(AGE))
 
+#hat % of DoD observations are missing education data?
 death_original_despair_noeduc_pct <- nrow(death_original_despair_noeduc)/nrow(death_original_despair) * 100
+
+#Determine what % of all infant mortalities could not be geocoded
+infMort_total <- filter(death_original, INFMORT == 1) %>%
+  mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
+
+infMort_total_byYear <- infMort_total %>% group_by(year) %>% summarise(tot=n())
+
+infMort_nogeo <- filter(infMort_total, is.na(GEOID10) | char < 10)
+
+infMort_nogeo_byYear <- infMort_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
+  inner_join(infMort_total_byYear) %>%
+  mutate(pct = n/tot*100)
+
+nrow(infMort_nogeo)/nrow(infMort_total)*100
+
+#Determine what % of DoD were not geocoded
+DOD_total <- filter(death_original_despair, DESPAIR==1)%>%
+  mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
+
+DOD_total_byYear <- DOD_total %>% group_by(year) %>% summarise(tot = n())
+
+DOD_nogeo <- filter(DOD_total, is.na(GEOID10) | char < 10)
+
+DOD_nogeo_byYear <- DOD_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
+  inner_join(DOD_total_byYear) %>% mutate(pct = n/tot * 100)
+
+nrow(DOD_nogeo)/nrow(DOD_total)*100
 
 ################################################################################
 
@@ -392,57 +417,49 @@ tract_to_cd116 <- fread("Data/crosswalk_cd116.csv") %>%
 ################################################################################
 
 #Re-categorize birth data
-
 birth_mutations <- function(df) {
   x <- df %>%
     mutate(
-      LOWBWEIGHT = case_when(
-        BWEIGHT < 2500 ~ 1,
-        BWEIGHT >= 2500 ~ 0),
-      PRETERM = case_when(
-        LOP < 37 ~ 1,
-        LOP >= 37 ~ 0),
-        #Test to make sure this works (create table of child hip mother hisp and see how they align)
       MOMHISP = case_when(
         #(MOTHHISP8902 == 0) | only works if we have pre-2010 data
-          (MOTHHISP0315 == 1) ~ 1,
+          (MOTHHISP0315 == 1) ~ 1, #Non-Hispanic
         #((MOTHHISP8902 >= 1) & (MOTHHISP8902 <= 5) | 
-           (MOTHHISP0315 >= 2) & (MOTHHISP0315 <= 5) ~ 2,
+           (MOTHHISP0315 >= 2) & (MOTHHISP0315 <= 5) ~ 2, #Hispanic
         #(MOTHHISP8902 == 9) | 
-          (MOTHHISP0315 == 9) ~ 3),
+          (MOTHHISP0315 == 9) ~ 3), #Unknown
       DADHISP = case_when(
         #(FATHHISP8902 == 0) | 
-          (FATHHISP0315 == 1) ~ 1,
+          (FATHHISP0315 == 1) ~ 1, #Non-Hispanic
         # ((FATHHISP8902 >= 1) & (FATHHISP8902 <= 5) | 
-           (FATHHISP0315 >= 2) & (FATHHISP0315 <= 5) ~ 2,
+           (FATHHISP0315 >= 2) & (FATHHISP0315 <= 5) ~ 2, #Hispanic
         # (FATHHISP8902 == 9) | 
-          (FATHHISP0315 == 9) ~ 3),
+          (FATHHISP0315 == 9) ~ 3), #Unknown
       HISP = case_when(
         !is.na(MOMHISP) ~ MOMHISP,
         is.na(MOMHISP) ~ DADHISP) %>%
-          factor(labels = c("Hispanic", "Non-Hispanic", "Unknown")),
+          factor(labels = c("Non-Hispanic", "Hispanic", "Unknown")),
       MOMRACE = case_when(
         # (mothrace7902 == 1) | 
-          (MOTHRACE0315 == 1)  ~ 1,
+          (MOTHRACE0315 == 1)  ~ 1, #White
         # (mothrace7902 == 2) | 
-          (MOTHRACE0315 == 2)  ~ 2,
+          (MOTHRACE0315 == 2)  ~ 2, #Black
         # (mothrace7902 == 3) | 
-          (MOTHRACE0315 == 3)  ~ 3, 
+          (MOTHRACE0315 == 3)  ~ 3, #American Indian Alaska Native
         # (mothrace7902 >=4 & mothrace7902<= 6) | (mothrace7902 == 8)
-          (MOTHRACE0315 >= 4 & MOTHRACE0315 <= 14) ~ 4,
+          (MOTHRACE0315 >= 4 & MOTHRACE0315 <= 14) ~ 4, #AAPI
         # (mothrace7902 == 7 | mothrace7902 == 0 | is.na(mothrace7902))
-          (MOTHRACE0315 >= 15 | is.na(MOTHRACE0315)) ~ 5),
+          (MOTHRACE0315 >= 15 | is.na(MOTHRACE0315)) ~ 5), #Other
       DADRACE = case_when(
         # (fathrace7902 == 1)  |
-          (FATHRACE0315 == 1) ~ 1,
+          (FATHRACE0315 == 1) ~ 1, #White
         # (fathrace7902 == 2) | 
-          (FATHRACE0315 == 2) ~ 2,
+          (FATHRACE0315 == 2) ~ 2, #Black
         # (fathrace7902 == 3) | 
-          (FATHRACE0315 == 3) ~ 3, 
+          (FATHRACE0315 == 3) ~ 3, #American Indian Alaska Native
         # (fathrace7902 >=4 & fathrace7902<= 6) | (fathrace7902 == 8) |
-          (FATHRACE0315 >= 4 & FATHRACE0315 <= 14) ~ 4,
+          (FATHRACE0315 >= 4 & FATHRACE0315 <= 14) ~ 4, #AAPI
         # (fathrace7902 == 7 | fathrace7902 == 0 | is.na(fathrace7902)) | 
-          (FATHRACE0315 >= 15 | is.na(FATHRACE0315)) ~ 5),
+          (FATHRACE0315 >= 15 | is.na(FATHRACE0315)) ~ 5), #Other
       RACE = case_when(
         !is.na(MOMRACE) ~ MOMRACE,
         is.na(MOMRACE) ~ DADRACE) %>%
@@ -451,38 +468,38 @@ birth_mutations <- function(df) {
             labels = c("White", "Black", "American Indian, Alaska Native", 
                        "Asian American Pacific Islander", "Other")),
       RACE2 = case_when(
-        as.integer(RACE) == 1 ~ 1,
-        as.integer(RACE) > 1 ~ 2) %>%
+        as.integer(RACE) == 1 ~ 1, #White
+        as.integer(RACE) > 1 ~ 2) %>% #Non-White
         factor(
           levels = c(1,2),
           labels = c("White", "Non-White")),
       RACEHISP = case_when(
-        as.integer(HISP) == 2 ~ 1,
-        as.integer(HISP) == 1 & as.integer(RACE) == 1 ~ 2,
-        as.integer(HISP) == 1 & as.integer(RACE) == 2 ~ 3,
-        as.integer(HISP) == 1 & as.integer(RACE) == 3 ~ 4,
-        as.integer(HISP) == 1 & as.integer(RACE) == 4 ~ 5,
-        as.integer(HISP) == 1 & as.integer(RACE) == 5 ~ 6,
-        as.integer(HISP) == 3 ~ 7) %>%
+        as.integer(HISP) == 2 ~ 1, #Hispanic
+        as.integer(HISP) == 1 & as.integer(RACE) == 1 ~ 2, #Non-Hispanic White
+        as.integer(HISP) == 1 & as.integer(RACE) == 2 ~ 3, #Non-Hispanic Black
+        as.integer(HISP) == 1 & as.integer(RACE) == 3 ~ 4, #Non-Hispanic American Indian Alaska Native
+        as.integer(HISP) == 1 & as.integer(RACE) == 4 ~ 5, #Non-Hispanic AAPI
+        as.integer(HISP) == 1 & as.integer(RACE) == 5 ~ 6, #Non-Hispanic Other
+        as.integer(HISP) == 3 ~ 7) %>% #Unknown
           factor(
             levels = c(1,2,3,4,5,6,7),
             labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Black", 
                         "Non-Hispanic American Indian, Alaska Native",
                         "Non-Hispanic Asian American Pacific Islander", "Non-Hispanic Other", "Unknown")),
       RACEHISP2 = case_when(
-        (as.integer(HISP) == 2) ~ 1,
-        (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2,
-        (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3,
-        (as.integer(HISP) == 3) ~ 4) %>%
+        (as.integer(HISP) == 2) ~ 1, #Hispanic
+        (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2, #Non-Hispanic White
+        (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3, #Non-Hispanic Non-White
+        (as.integer(HISP) == 3) ~ 4) %>% #Unknown
         factor(
           levels = c(1,2,3,4),
           labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Non-White", "Unknown")),
       CD = factor(CD, 
                   levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
                   labels = c("CD 01", "CD 02", "CD 03", "CD 04", "CD 05",
-                                 "CD 06", "CD 07", "CD 08", "CD 09", "CD 10",
-                                 "CD 11", "CD 12", "CD 13", "CD 14", "CD 15",
-                                 "CD 16", "CD 17", "CD 18", "CD 19")),
+                             "CD 06", "CD 07", "CD 08", "CD 09", "CD 10",
+                             "CD 11", "CD 12", "CD 13", "CD 14", "CD 15",
+                             "CD 16", "CD 17", "CD 18", "CD 19")),
       CONGRESS = case_when(
         year >= 2009 & year <= 2010 ~ 1,
         year >= 2011 & year <= 2012 ~ 2,
@@ -540,51 +557,48 @@ death_mutations <- function(df) {
                      "113 - 114 (2013 - 2015)")),
       RACE = case_when(
         RACE9011 == 1 | 
-          race1215 == 01 ~ 1,
+          race1215 == 01 ~ 1, #White
         RACE9011 == 2 | 
-          race1215 == 02 ~ 2,
+          race1215 == 02 ~ 2, #Black
         RACE9011 == 3 | 
-          race1215 == 03 ~ 3,
+          race1215 == 03 ~ 3, #American Indian Alaska Native
         ((RACE9011 >= 4 & RACE9011 <= 8) | RACE9011 == 0) | 
-          (race1215 >= 04 & race1215 <= 14) ~ 4,
+          (race1215 >= 04 & race1215 <= 14) ~ 4, #AAPI
         RACE9011 == 9 | is.na(RACE9011) | 
-          is.na(race1215) | race1215>= 15 ~ 5) %>%
+          is.na(race1215) | race1215>= 15 ~ 5) %>% #Other
             factor(
               levels = c(1,2,3,4,5),
               labels = c("White", "Black", 
               "American Indian, Alaska Native", "Asian American Pacific Islander", "Other")),
       RACE2 = case_when(
-        as.integer(RACE) == 1 ~ 1,
-        as.integer(RACE) > 1 ~ 2) %>%
+        as.integer(RACE) == 1 ~ 1, #White
+        as.integer(RACE) > 1 ~ 2) %>% #Non-White
           factor(
             levels = c(1,2),
             labels = c("White", "Non-White")),
       HISP = case_when(
-        #Non-Hispanic
-        HISPANIC == 1 ~ 1,
-        #Hispanic
-        HISPANIC >= 2 & HISPANIC <= 5 ~ 2,
-        #Unknown
-        HISPANIC == 9 ~ 3),
+        HISPANIC == 1 ~ 1, #Non-Hispanic
+        HISPANIC >= 2 & HISPANIC <= 5 ~ 2, #Hispanic
+        HISPANIC == 9 ~ 3), #Unknown
       HISP = factor(HISP, labels = c("Non-Hispanic", "Hispanic", "Unknown")),
       RACEHISP = case_when(
-        (as.integer(HISP) == 2) ~ 1,
-        (as.integer(HISP) == 1) & (as.integer(RACE) == 1) ~ 2,
-        (as.integer(HISP) == 1) & (as.integer(RACE) == 2) ~ 3,
-        (as.integer(HISP) == 1) & (as.integer(RACE) == 3) ~ 4,
-        (as.integer(HISP) == 1) & (as.integer(RACE) == 4) ~ 5,
-        (as.integer(HISP) == 1) & (as.integer(RACE) == 5) ~ 6,
-        (as.integer(HISP) == 3) ~ 7) %>%
+        (as.integer(HISP) == 2) ~ 1, #Hispanic
+        (as.integer(HISP) == 1) & (as.integer(RACE) == 1) ~ 2, #Non-Hispanic White
+        (as.integer(HISP) == 1) & (as.integer(RACE) == 2) ~ 3, #Non-Hispanic Black
+        (as.integer(HISP) == 1) & (as.integer(RACE) == 3) ~ 4, #Non-Hispanic American Indian Alaska Native
+        (as.integer(HISP) == 1) & (as.integer(RACE) == 4) ~ 5, #Non-Hispanic AAPI
+        (as.integer(HISP) == 1) & (as.integer(RACE) == 5) ~ 6, #Non-Hispanic Other
+        (as.integer(HISP) == 3) ~ 7) %>% #Unknown
           factor(
             levels = c(1,2,3,4,5,6,7),
             labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Black", 
-            "Non-Hispanic American Indian, Alaska Native",
-            "Non-Hispanic Asian American Pacific Islander", "Non-Hispanic Other", "Unknown")),
+                       "Non-Hispanic American Indian, Alaska Native",
+                       "Non-Hispanic Asian American Pacific Islander", "Non-Hispanic Other", "Unknown")),
       RACEHISP2 = case_when(
-        (as.integer(HISP) == 2) ~ 1,
-        (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2,
-        (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3,
-        (as.integer(HISP) == 3) ~ 4) %>%
+        (as.integer(HISP) == 2) ~ 1, #Hispanic
+        (as.integer(HISP) == 1) & (as.integer(RACE2) == 1) ~ 2, #Non-Hispanic White
+        (as.integer(HISP) == 1) & (as.integer(RACE2) == 2) ~ 3, #Non-Hispanic Non-White
+        (as.integer(HISP) == 3) ~ 4) %>% #Unknown
           factor(
             levels = c(1,2,3,4),
             labels = c("Hispanic", "Non-Hispanic White", "Non-Hispanic Non-White", "Unknown")),
@@ -635,10 +649,10 @@ death_mutations <- function(df) {
                labels = c("Under 18 years", "18 to 24 years", "25 to 34 years",
                           "35 to 44 years", "45 to 64 years", "65 years and over")),
       EDUC = case_when(
-        EDUC == 0 ~ 1,
-        EDUC == 1 ~ 2, 
-        EDUC == 2 ~ 3,
-        EDUC == 3 ~ 4,
+        EDUC == 0 ~ 1, #Less than HS
+        EDUC == 1 ~ 2, #HS
+        EDUC == 2 ~ 3, #Some College
+        EDUC == 3 ~ 4, #College+
         TRUE ~ 5) %>%
         factor(
           levels = c(1,2,3,4,5),
@@ -686,18 +700,21 @@ RACE2 <- death_cd %>%
   unique()
 
 ################################################################################
-var_names <- load_variables(2015, "acs5", cache = TRUE) %>%
-  rename(variable = name)
+#ACS variables
+var_names <- load_variables(2015, "acs5", cache = TRUE) %>% rename(variable = name)
 
-pop_total <- c("B03002_001")
+#Population variables - men and women ages 25-64
+pop_male_25_64 <- paste0("B01001_", sprintf("%03d", 11:19))
+pop_female_25_64 <- paste0("B01001_", sprintf("%03d", 35:43))
+pop_25_64 <- c(pop_male_25_64, pop_female_25_64)
 
+#Population variables - by race
 pop_byRace_vars <- c("B03002_012", "B03002_003", "B03002_004",
-              "B03002_005", "B03002_006", "B03002_007", "B03002_008", "B03002_009")
+                     "B03002_005", "B03002_006", "B03002_007", 
+                     "B03002_008", "B03002_009")
 
 #Pull ACS population data and re-categorize to match our categories. 
 #I grouped all multiracial populations into 7 for unknown, but the numbers seem too high
-
-
 popRaceSexAge_all <- c(paste0("B01001A_", sprintf("%03d", 9:13)), paste0("B01001A_", sprintf("%03d", 24:28)),#White
                        paste0("B01001B_", sprintf("%03d", 9:13)),paste0("B01001B_", sprintf("%03d", 24:28)),#Black
                        paste0("B01001C_", sprintf("%03d", 9:13)),paste0("B01001C_", sprintf("%03d", 24:28)),#AIAN
@@ -723,12 +740,35 @@ popEducSexAge_all <- c(popEducSexAge_lessThanHSMale, popEducSexAge_lessThanHSFem
                        popEducSexAge_someCollegeMale, popEducSexAge_someCollegeFemale,
                        popEducSexAge_BachPlusMale, popEducSexAge_BachPlusFemale)
 
-popRaceSexAge_all_2010 <- get_acs(geography = "congressional district", 
-                                  variables = popRaceSexAge_all, 
-                                  year = 2010, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2010) 
+################################################################################
 
+pop_25_64_2011 <- get_acs(geography = "congressional district", 
+                          variables = pop_25_64, 
+                          year = 2011, state = 42) %>%
+  left_join(var_names) %>%
+  mutate(year = 2011)
+
+pop_pop_25_64_2016 <- get_acs(geography = "congressional district", 
+                          variables = pop_25_64, 
+                          year = 2016, state = 42) %>%
+  left_join(var_names) %>%
+  mutate(year = 2015)
+
+population_pop_25_64_byCD <- bind_rows(pop_25_64_2011, pop_pop_25_64_2016) %>%
+  rename(Population = estimate) %>%
+  mutate(
+    Population = Population * 3,
+    CD = as.integer(str_sub(GEOID, start=-2)) %>%
+      factor(levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
+             labels = c("CD 01", "CD 02", "CD 03", "CD 04", "CD 05",
+                        "CD 06", "CD 07", "CD 08", "CD 09", "CD 10",
+                        "CD 11", "CD 12", "CD 13", "CD 14", "CD 15",
+                        "CD 16", "CD 17", "CD 18", "CD 19"))) %>%
+  select(c(CD, year, Population)) %>%
+  group_by(CD, year) %>%
+  summarise(Population = sum(Population)) %>%
+  ungroup() %>%
+  inner_join(CONGRESS)
 
 popRaceSexAge_all_2011 <- get_acs(geography = "congressional district", 
                                   variables = popRaceSexAge_all, 
@@ -736,82 +776,14 @@ popRaceSexAge_all_2011 <- get_acs(geography = "congressional district",
   left_join(var_names) %>%
   mutate(year = 2011)
 
-popRaceSexAge_all_2012 <- get_acs(geography = "congressional district", 
-                                  variables = popRaceSexAge_all, 
-                                  year = 2012, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2012) 
-
-popRaceSexAge_all_2013 <- get_acs(geography = "congressional district", 
-                                  variables = popRaceSexAge_all, 
-                                  year = 2013, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2013)
-
-popRaceSexAge_all_2014 <- get_acs(geography = "congressional district", 
-                                  variables = popRaceSexAge_all, 
-                                  year = 2014, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2014)
-
-
-popRaceSexAge_all_2015 <- get_acs(geography = "congressional district", 
-                                  variables = popRaceSexAge_all, 
-                                  year = 2015, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2015)
-
+#Purposefully pulling 2015 data for 2015 for later analysis
 popRaceSexAge_all_2016 <- get_acs(geography = "congressional district", 
                                   variables = popRaceSexAge_all, 
-                                  year = 2015, state = 42) %>%
+                                  year = 2016, state = 42) %>%
   left_join(var_names) %>%
   mutate(year = 2015)
 
-
-population_byRaceSexAgeCD_orig <- bind_rows(popRaceSexAge_all_2010, popRaceSexAge_all_2011, 
-                                    popRaceSexAge_all_2012, popRaceSexAge_all_2013, 
-                                    popRaceSexAge_all_2014, popRaceSexAge_all_2015) %>%
-  rename(Population = estimate) %>%
-  mutate(
-    CD = as.integer(str_sub(GEOID, start=-2)) %>%
-      factor(levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
-             labels = c("CD 01", "CD 02", "CD 03", "CD 04", "CD 05",
-                        "CD 06", "CD 07", "CD 08", "CD 09", "CD 10",
-                        "CD 11", "CD 12", "CD 13", "CD 14", "CD 15",
-                        "CD 16", "CD 17", "CD 18", "CD 19")),
-    SEX = case_when(
-      grepl("Male", label, fixed = TRUE) == TRUE ~ 1,
-      grepl("Female", label, fixed = TRUE) == TRUE ~ 2) %>%
-      factor(levels = c(1,2), labels = c("Male", "Female")),
-    "RACE" = case_when(
-      grepl("WHITE", concept, fixed = TRUE) == TRUE ~ 1,
-      grepl("BLACK", concept, fixed = TRUE) == TRUE ~ 2,
-      grepl("AMERICAN INDIAN", concept, fixed = TRUE) == TRUE ~ 3,
-      grepl("ASIAN", concept, fixed = TRUE) == TRUE ~ 4,
-      grepl("NATIVE HAWAIIAN", concept, fixed = TRUE) == TRUE ~ 4,
-      grepl("OTHER RACE", concept, fixed = TRUE) == TRUE ~ 5,
-      grepl("TWO OR MORE", concept, fixed = TRUE) == TRUE ~ 5) %>%
-      factor(levels = c(1,2,3,4,5),
-             labels = c("White", "Black", "American Indian, Alaska Native", 
-                              "Asian American Pacific Islander", "Other")),
-    AGE_CAT = case_when(
-      grepl(25, label, fixed = TRUE) == TRUE ~ 7,
-      grepl(30, label, fixed = TRUE) == TRUE ~ 8,
-      grepl(35, label, fixed = TRUE) == TRUE ~ 9,
-      grepl(45, label, fixed = TRUE) == TRUE ~ 10,
-      grepl(55, label, fixed = TRUE) == TRUE ~ 11) %>%
-      factor(levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14),
-             labels = c("Under 5 years", "05 to 09 years", "10 to 14 years",
-                        "15 to 17 years", "18 and 19 years", "20 to 24 years",
-                        "25 to 29 years", "30 to 34 years", "35 to 44 years",
-                        "45 to 54 years", "55 to 64 years", "65 to 74 years",
-                        "75 to 84 years", "85 years and over"))) %>%
-  select(c("CD", "SEX", "RACE", "AGE_CAT", "year", "Population")) %>%
-  group_by(CD, SEX, RACE, AGE_CAT, year) %>%
-  summarise(Population = sum(Population)) %>%
-  ungroup() %>%
-  inner_join(CONGRESS) %>%
-  inner_join(AGE_CATS)
+#Population by Race and Sex, by year
 
 #For 111 - 112, we are using the acs5 from 2011 because it is the latest acs5 with CD19. To estimate 2010-2012, we take our estimates
 #and multiply by 3. For 113 - -114, we are using the acs5 from 2016 (2012 - 2016) and multiplying by 3.
@@ -829,7 +801,7 @@ population_byRaceSexAgeCD <- bind_rows(popRaceSexAge_all_2011, popRaceSexAge_all
       grepl("Male", label, fixed = TRUE) == TRUE ~ 1,
       grepl("Female", label, fixed = TRUE) == TRUE ~ 2) %>%
       factor(levels = c(1,2), labels = c("Male", "Female")),
-    "RACE" = case_when(
+    RACE = case_when(
       grepl("WHITE", concept, fixed = TRUE) == TRUE ~ 1,
       grepl("BLACK", concept, fixed = TRUE) == TRUE ~ 2,
       grepl("AMERICAN INDIAN", concept, fixed = TRUE) == TRUE ~ 3,
@@ -852,7 +824,7 @@ population_byRaceSexAgeCD <- bind_rows(popRaceSexAge_all_2011, popRaceSexAge_all
                         "25 to 29 years", "30 to 34 years", "35 to 44 years",
                         "45 to 54 years", "55 to 64 years", "65 to 74 years",
                         "75 to 84 years", "85 years and over"))) %>%
-  select(c("CD", "SEX", "RACE", "AGE_CAT", "year", "Population")) %>%
+  select(c(CD, SEX, RACE, AGE_CAT, year, Population)) %>%
   group_by(CD, SEX, RACE, AGE_CAT, year) %>%
   summarise(Population = sum(Population)) %>%
   ungroup() %>%
@@ -876,99 +848,23 @@ population_byRaceAgeCD_byCongress2 <- population_byRaceSexAgeCD_byCongress2 %>%
   group_by(CD, RACE, AGE_CAT_EDUC, CONGRESS2) %>%
   summarise(Population = sum(Population, na.rm = TRUE))
 
-population_byRaceSexAgeCD_byCongress2_orig <- population_byRaceSexAgeCD_orig %>%
-  group_by(CD, SEX, RACE, AGE_CAT_EDUC, CONGRESS2) %>%
-  summarise(Population = sum(Population, na.rm = TRUE))
-
 population_byRace2SexAgeCD_byCongress2 <- inner_join(population_byRaceSexAgeCD_byCongress2, RACE2) %>%
   group_by(CD, SEX, RACE2, AGE_CAT_EDUC, CONGRESS2) %>%
   summarise(Population = sum(Population, na.rm = TRUE))
 
 ################################################################################
-
-popEducSexAge_all_2010 <- get_acs(geography = "congressional district", 
-                                  variables = popEducSexAge_all, 
-                                  year = 2010, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2010)
     
-
 popEducSexAge_all_2011 <- get_acs(geography = "congressional district", 
                                   variables = popEducSexAge_all, 
                                   year = 2011, state = 42) %>%
   left_join(var_names) %>%
   mutate(year = 2011)
- 
-popEducSexAge_all_2012 <- get_acs(geography = "congressional district", 
-                                  variables = popEducSexAge_all, 
-                                  year = 2012, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2012)
- 
-popEducSexAge_all_2013 <- get_acs(geography = "congressional district", 
-                                  variables = popEducSexAge_all, 
-                                  year = 2013, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2013)
- 
-popEducSexAge_all_2014 <- get_acs(geography = "congressional district", 
-                                  variables = popEducSexAge_all, 
-                                  year = 2014, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2014)
-
-popEducSexAge_all_2015 <- get_acs(geography = "congressional district", 
-                                  variables = popEducSexAge_all, 
-                                  year = 2015, state = 42) %>%
-  left_join(var_names) %>%
-  mutate(year = 2015)
 
 popEducSexAge_all_2016 <- get_acs(geography = "congressional district", 
                                   variables = popEducSexAge_all, 
                                   year = 2016, state = 42) %>%
   left_join(var_names) %>%
   mutate(year = 2015)
-  
-population_byEducSexAgeCD_orig <- bind_rows(popEducSexAge_all_2010, popEducSexAge_all_2011, 
-                                       popEducSexAge_all_2012, popEducSexAge_all_2013, 
-                                       popEducSexAge_all_2014, popEducSexAge_all_2015) %>%
-  mutate(
-    CD = as.integer(str_sub(GEOID, start=-2)) %>%
-      factor(levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
-            labels = c("CD 01", "CD 02", "CD 03", "CD 04", "CD 05",
-                       "CD 06", "CD 07", "CD 08", "CD 09", "CD 10",
-                       "CD 11", "CD 12", "CD 13", "CD 14", "CD 15",
-                       "CD 16", "CD 17", "CD 18", "CD 19")),
-    SEX = case_when(
-      grepl("Male", label, fixed = TRUE) == TRUE ~ 1,
-      grepl("Female", label, fixed = TRUE) == TRUE ~ 2) %>%
-      factor(levels = c(1,2),
-             labels = c("Male", "Female")),
-    "EDUC" = case_when(
-      grepl("Less than 9th grade", label, fixed = TRUE) == TRUE ~ 1,
-      grepl("9th to 12th grade, no diploma", label, fixed = TRUE) == TRUE ~ 1,
-      grepl("High school graduate", label, fixed = TRUE) == TRUE ~ 2,
-      grepl("Some college, no degree", label, fixed = TRUE) == TRUE ~ 3,
-      grepl("Associate's degree", label, fixed = TRUE) == TRUE ~ 3,
-      grepl("Bachelor's degree", label, fixed = TRUE) == TRUE ~ 4,
-      grepl("Graduate or professional degree", label, fixed = TRUE) == TRUE ~ 4) %>%
-      factor(levels = c(1,2,3,4),
-             labels = c("Less than High School","High School",
-                              "Some College/Associate Degree",
-                              "Bachelor/Master/Doctorate/Professional Degree")),
-    AGE_CAT_EDUC = case_when(
-      grepl("25", label, fixed = TRUE) == TRUE ~ 3,
-      grepl("35", label, fixed = TRUE) == TRUE ~ 4,
-      grepl("45", label, fixed = TRUE) == TRUE ~ 5) %>%
-      factor(levels = c(1,2,3,4,5,6),
-             labels = c("Under 18 years", "18 to 24 years", "25 to 34 years",
-                        "35 to 44 years", "45 to 64 years", "65 years and over"))) %>%
-  rename(Population = estimate) %>%
-  select(c("CD", "SEX", "EDUC", "AGE_CAT_EDUC", "year", "Population")) %>%
-  group_by(CD, SEX, EDUC, AGE_CAT_EDUC, year) %>%
-  summarise(Population = sum(Population)) %>%
-  ungroup() %>%
-  inner_join(CONGRESS)
 
 population_byEducSexAgeCD <- bind_rows(popEducSexAge_all_2011, popEducSexAge_all_2016) %>%
   rename(Population = estimate) %>%
@@ -1004,7 +900,7 @@ population_byEducSexAgeCD <- bind_rows(popEducSexAge_all_2011, popEducSexAge_all
       factor(levels = c(1,2,3,4,5,6),
              labels = c("Under 18 years", "18 to 24 years", "25 to 34 years",
                         "35 to 44 years", "45 to 64 years", "65 years and over"))) %>%
-  select(c("CD", "SEX", "EDUC", "AGE_CAT_EDUC", "year", "Population")) %>%
+  select(c(CD, SEX, EDUC, AGE_CAT_EDUC, year, Population)) %>%
   group_by(CD, SEX, EDUC, AGE_CAT_EDUC, year) %>%
   summarise(Population = sum(Population)) %>%
   ungroup() %>%
@@ -1022,8 +918,4 @@ population_byEducSexAgeCD_byCongress2 <- group_by(population_byEducSexAgeCD, CD,
 #no sex
 population_byEducAgeCD_byCongress2 <- population_byEducSexAgeCD_byCongress2 %>%
   group_by(CD, CONGRESS2, AGE_CAT_EDUC, EDUC) %>%
-  summarise(Population = sum(Population, na.rm = TRUE))
-
-population_byEducSexAgeCD_byCongress2_orig <- group_by(population_byEducSexAgeCD_orig, CD, SEX, 
-                                                  EDUC, AGE_CAT_EDUC, CONGRESS2) %>%
   summarise(Population = sum(Population, na.rm = TRUE))

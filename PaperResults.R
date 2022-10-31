@@ -2,13 +2,13 @@
 #Figure 1 - Map of IMR rates over CD's
 figure1 <- IMR_Maps_2
 figure1
-ggsave("./Final Results/figure1.pdf", plot = figure1, width = 8.5, height = 11)
+ggsave("./Final Results/figure1.pdf", plot = figure1, width = 9, height = 12.5)
 ggsave("./Final Results/figure1.png")
 
 #Figure 2 - Map of overall DOD over CD'2 -- by overall, do we mean MR?
 figure2 <- DOD_Maps_2
 figure2
-ggsave("./Final Results/figure2.pdf", plot = figure2, width = 8.5, height = 11)
+ggsave("./Final Results/figure2.pdf", plot = figure2, width = 9, height = 12.5)
 ggsave("./Final Results/figure2.png", plot = figure2, width = 8.5, height = 11)
 
 #Figure 3 - IMR by race/ethnicity

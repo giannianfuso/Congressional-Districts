@@ -22,14 +22,10 @@ library(classInt)
 library(ggmap)
 select <- dplyr::select
 
-
 ################################################################################
 
-results_folder <- "C:\\Users\\ga437\\OneDrive - Drexel University\\Congressional_Districts_BRFSS\\Anfuso_Results\\"
 
-################################################################################
-#Color themes:
-
+#Define global color themes to manually apply to charts
 color_AAPI <- "#50bde9"
 color_AmericanIndian <- "#009e74"
 color_Black <- "#d55e00"
@@ -42,39 +38,20 @@ color_SomeCollege <- "#0072b2"
 color_Bachelor <- "#f0e442"
 
 ################################################################################
-#Determine what % of all infant mortalities could not be geocoded
-infMort_total <- filter(death_original, INFMORT == 1) %>%
-  mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
-
-infMort_total_byYear <- infMort_total %>% group_by(year) %>% summarise(tot=n())
-
-infMort_nogeo <- filter(infMort_total, is.na(GEOID10) | char < 10)
-
-infMort_nogeo_byYear <- infMort_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
-  inner_join(infMort_total_byYear) %>%
-  mutate(pct = n/tot*100)
-
-nrow(infMort_nogeo)/nrow(infMort_total)*100
 
 #Infant Mortality by CD
-infMort_byCD_byYear <- group_by(death_cd, CONGRESS, CD, year) %>%
-  summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE))
-
 infMort_byCD <- group_by(death_cd, CONGRESS, CD) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE))
 
-#Combine congresses
+#Infant Mortality by CD - combined Congresses
 infMort_byCD_2 <- group_by(death_cd, CONGRESS2, CD) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE))
 
 #Live Births by CD
-liveBirths_byYear <- group_by(birth_cd, CONGRESS, CD, year) %>%
-  summarise(LiveBirths = sum(ALLOCATION))
-
 liveBirths_byCD <- group_by(birth_cd, CONGRESS, CD) %>%
   summarise(LiveBirths = sum(ALLOCATION))
 
-#Combine congresses
+#Live Births by CD - combined Congresses
 liveBirths_byCD_2 <- group_by(birth_cd, CONGRESS2, CD) %>%
   summarise(LiveBirths = sum(ALLOCATION))
 
@@ -82,75 +59,70 @@ liveBirths_byCD_2 <- group_by(birth_cd, CONGRESS2, CD) %>%
 IMR_byCD <- inner_join(infMort_byCD, liveBirths_byCD) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
 
-#IMR by CD - Combined Congresses
+#IMR by CD - combined Congresses
 IMR_byCD_2 <- inner_join(infMort_byCD_2, liveBirths_byCD_2) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
 
 ################################################################################
 
-#Infant Mortality by CD & Race
+#Infant Mortality by CD & race-ethnicity
 infMort_byCD_byRace <- group_by(death_cd, CONGRESS, CD, RACEHISP) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE)) %>%
-  filter(as.integer(RACEHISP)!=4) #Remove american indian alaska native
+  filter(as.integer(RACEHISP)!=4) #Remove American Indian Alaska Native
 
-#Combine Congresses
+#Infant Mortality by CD & race-ethnicity - combined Congresses
 infMort_byCD_byRace_2 <- group_by(death_cd, CONGRESS2, CD, RACEHISP) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE)) %>%
-  filter(as.integer(RACEHISP)!=4) #Remove american indian alaska native
+  filter(as.integer(RACEHISP)!=4) #Remove American Indian Alaska Native
 
-#Combine Congresses - cd116 boundaries
+#Infant Mortality by CD & race-ethnicity - combined Congresses - 116 boundaries
 infMort_byCD_byRace_2_cd116 <- group_by(death_cd116, CONGRESS2, CD, RACEHISP) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE)) %>%
-  filter(as.integer(RACEHISP)!=4) #Remove american indian alaska native
+  filter(as.integer(RACEHISP)!=4) #Remove American Indian Alaska Native
 
-#Live Births by CD & Race
+#Live Births by CD & race-ethnicity
 liveBirths_byCD_byRace <- group_by(birth_cd, CONGRESS, CD, RACEHISP) %>%
   summarise(LiveBirths = sum(ALLOCATION)) %>%
-  filter(as.integer(RACEHISP)!=4) #Remove american indian alaska native
+  filter(as.integer(RACEHISP)!=4) #Remove American Indian Alaska Native
 
-#Live Births by CD & Race - Combine Congresses
+#Live Births by CD & race-ethnicity - combined Congresses
 liveBirths_byCD_byRace_2 <- group_by(birth_cd, CONGRESS2, CD, RACEHISP) %>%
   summarise(LiveBirths = sum(ALLOCATION)) %>%
-  filter(as.integer(RACEHISP)!=4) #Remove american indian alaska native
+  filter(as.integer(RACEHISP)!=4) #Remove American Indian Alaska Native
 
-#Live Births by CD & Race - Combine Congresses - cd116 boundaries
+#Live Births by CD & race-ethnicity - combined Congresses - 116 boundaries
 liveBirths_byCD_byRace_2_cd116 <- group_by(birth_cd116, CONGRESS2, CD, RACEHISP) %>%
   summarise(LiveBirths = sum(ALLOCATION)) %>%
-  filter(as.integer(RACEHISP)!=4) #Remove american indian alaska native
+  filter(as.integer(RACEHISP)!=4) #Remove American Indian Alaska Native
 
-#IMR by CD & Race
+#IMR by CD & race-ethnicity
 IMR_byCD_byRace <- inner_join(infMort_byCD_byRace, liveBirths_byCD_byRace) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
 
-#Combine Congresses
+#IMR by CD & race-ethnicity - combined Congresses
 IMR_byCD_byRace_2 <- inner_join(infMort_byCD_byRace_2, liveBirths_byCD_byRace_2) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD)) %>%
   select(-c(InfantMortality, LiveBirths))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(IMR_byCD_byRace_2, file = "./ShinyApp/IMR_byCD_byRace_2.Rdata")
 
-#All details for regression
+#IMR by CD & race-ethnicity - combined Congresses - with details
 IMR_byCD_byRace_2_details <- inner_join(infMort_byCD_byRace_2, liveBirths_byCD_byRace_2) %>%
   filter(RACEHISP!="Unknown")%>%
-  mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD), 
-         RACEHISP = relevel(RACEHISP, ref = 'Non-Hispanic White'))
+  mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD))
 
-#Combine Congresses - cd116 boundaries
+#IMR by CD & race-ethnicity - combined Congresses - 116 boundaries - with details
 IMR_byCD_byRace_2_cd116_orig <- inner_join(infMort_byCD_byRace_2_cd116, liveBirths_byCD_byRace_2_cd116) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD))
 
+#IMR by CD & race-ethnicity - combined Congresses - 116 boundaries - details removed
 IMR_byCD_byRace_2_cd116 <- inner_join(infMort_byCD_byRace_2_cd116, liveBirths_byCD_byRace_2_cd116) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD)) %>%
   select(-c(InfantMortality, LiveBirths))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(IMR_byCD_byRace_2_cd116, file = "./ShinyApp/IMR_byCD_byRace_2_cd116.Rdata")
-
-#With details for regression
-IMR_byCD_byRace_2_cd116_details <- inner_join(infMort_byCD_byRace_2_cd116, liveBirths_byCD_byRace_2_cd116) %>%
-  mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD),
-         RACEHISP = relevel(RACEHISP, ref = 'Non-Hispanic White'))
 
 ################################################################################
 
@@ -158,39 +130,39 @@ IMR_byCD_byRace_2_cd116_details <- inner_join(infMort_byCD_byRace_2_cd116, liveB
 infMort_byCD_byRace_nhw <- group_by(filter(death_cd, as.integer(RACEHISP) ==2), CONGRESS, CD, RACEHISP) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE))
 
-#Combined Congresses
+#Infant Mortality by CD - Non-Hispanic White - combined Congresses
 infMort_byCD_byRace_nhw_2 <- group_by(filter(death_cd, as.integer(RACEHISP) ==2), CONGRESS2, CD, RACEHISP) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE))
 
-#Combined Congresses - cd116 boundaries
+#Infant Mortality by CD - Non-Hispanic White - combined Congresses - 116 boundaries
 infMort_byCD_byRace_nhw_2_cd116 <- group_by(filter(death_cd116, as.integer(RACEHISP) ==2), CONGRESS2, CD, RACEHISP) %>%
   summarise(InfantMortality = sum(INFMORT_CD, na.rm = TRUE))
 
-#Live Births by CD & Race - Non-Hispanic White
+#Live Births by CD - Non-Hispanic White
 liveBirths_byCD_byRace_nhw <- group_by(filter(birth_cd, as.integer(RACEHISP)==2), CONGRESS, CD, RACEHISP) %>%
   summarise(LiveBirths = sum(ALLOCATION))
 
-#Combined Congresses
+#Live Births by CD - Non-Hispanic White - combined Congresses
 liveBirths_byCD_byRace_nhw_2 <- group_by(filter(birth_cd, as.integer(RACEHISP)==2), CONGRESS2, CD, RACEHISP) %>%
   summarise(LiveBirths = sum(ALLOCATION))
 
-#Combined Congresses - cd116 boundaries
+#Live Births by CD - Non-Hispanic White - combined Congresses - 116 boundaries
 liveBirths_byCD_byRace_nhw_2_cd116 <- group_by(filter(birth_cd116, as.integer(RACEHISP)==2), CONGRESS2, CD, RACEHISP) %>%
   summarise(LiveBirths = sum(ALLOCATION))
 
-#IMR by CD & Race - Non-Hispanic White
+#IMR by CD - Non-Hispanic White
 IMR_byCD_byRace_nhw <- inner_join(infMort_byCD_byRace_nhw, liveBirths_byCD_byRace_nhw) %>%
   mutate(IMR_nhw = InfantMortality/LiveBirths * 1000)
 
-#Combined congresses
+#IMR by CD - Non-Hispanic White - combined Congresses
 IMR_byCD_byRace_nhw_2 <- inner_join(infMort_byCD_byRace_nhw_2, liveBirths_byCD_byRace_nhw_2) %>%
   mutate(IMR_nhw = InfantMortality/LiveBirths * 1000)
 
-#Combined congresses - cd116
+#IMR by CD - Non-Hispanic White - combined Congresses - 116 boundaries
 IMR_byCD_byRace_nhw_2_cd116 <- inner_join(infMort_byCD_byRace_nhw_2_cd116, liveBirths_byCD_byRace_nhw_2_cd116) %>%
   mutate(IMR_nhw = InfantMortality/LiveBirths * 1000)
 
-#Absolute disparity by CD and Race
+#Absolute disparity by CD and race-ethnicity
 IMR_byCD_byRace_absDisparity <- full_join(IMR_byCD_byRace, 
                                           IMR_byCD_byRace_nhw, 
                                           by = c("CONGRESS", "CD")) %>%
@@ -198,7 +170,7 @@ IMR_byCD_byRace_absDisparity <- full_join(IMR_byCD_byRace,
   rename(RACEHISP = RACEHISP.x) %>%
   mutate(IMR_absDisparity = (IMR-IMR_nhw))
 
-#Combined Congresses
+#Absolute disparity by CD and race-ethnicity - combined Congresses
 IMR_byCD_byRace_absDisparity_2 <- full_join(IMR_byCD_byRace_2_details, 
                                           IMR_byCD_byRace_nhw_2, 
                                           by = c("CONGRESS2", "CD")) %>%
@@ -210,10 +182,10 @@ IMR_byCD_byRace_absDisparity_2 <- full_join(IMR_byCD_byRace_2_details,
   select(c(CONGRESS2, CD, RACEHISP, IMR_absDisparity, paired, se, lci, uci)) %>%
   rename(IMR = IMR_absDisparity)
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(IMR_byCD_byRace_absDisparity_2, file = "./ShinyApp/IMR_byCD_byRace_absDisparity_2.Rdata")
 
-#Relative disparities
+#Relative disparities by CD and race-ethnicity - combined Congresses
 IMR_byCD_byRace_relDisparity_2 <- full_join(IMR_byCD_byRace_2_details, 
                                             IMR_byCD_byRace_nhw_2, 
                                             by = c("CONGRESS2", "CD")) %>%
@@ -226,7 +198,7 @@ IMR_byCD_byRace_relDisparity_2 <- full_join(IMR_byCD_byRace_2_details,
   select(c(CONGRESS2, CD, RACEHISP, IMR_relDisparity, paired, se, lci, uci)) %>%
   rename(IMR = IMR_relDisparity)
 
-#Create tables for paper
+#Absolute disparity table
 IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
          RACEHISP!="Non-Hispanic Other") %>%
@@ -267,9 +239,10 @@ IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
 
-#Write to csv
+#Absolute disparity table - write to csv
 write.csv(IMR_byCD_byRace_absDisparity_2_table, "./Final Results/IMR_byCD_byRace_absDisparity_2_table.csv", row.names = FALSE)
 
+#Relative disparity table
 IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
          RACEHISP!="Non-Hispanic Other") %>%
@@ -310,10 +283,10 @@ IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
 
-#Write to csv
+#Relative disparity table - write to csv
 write.csv(IMR_byCD_byRace_relDisparity_2_table, "./Final Results/IMR_byCD_byRace_relDisparity_2_table.csv", row.names = FALSE)
 
-#Abs disparities - cd116 boundaries
+#Absolute disparity by CD and race-ethnicity - combined Congresses - 116 boundaries
 IMR_byCD_byRace_absDisparity_2_cd116 <- full_join(IMR_byCD_byRace_2_cd116, 
                                             IMR_byCD_byRace_nhw_2_cd116, 
                                             by = c("CONGRESS2", "CD")) %>%
@@ -324,7 +297,7 @@ IMR_byCD_byRace_absDisparity_2_cd116 <- full_join(IMR_byCD_byRace_2_cd116,
   rename(IMR = IMR_absDisparity) %>%
   filter(as.integer(RACEHISP) < 6)
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(IMR_byCD_byRace_absDisparity_2_cd116, file = "./ShinyApp/IMR_byCD_byRace_absDisparity_2_cd116.Rdata")
 
 #MLD Calculations 
@@ -394,87 +367,69 @@ mld_race_spec<-total_deaths_IMR%>%
   })
 write.csv(mld_race_spec, "Final Results/mld_race_spec.csv", row.names = FALSE)
 ################################################################################
-#Determine what % of DoD were not geocoded
-DOD_total <- filter(death_original_despair, DESPAIR==1)%>%
-  mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
 
-DOD_total_byYear <- DOD_total %>% group_by(year) %>% summarise(tot = n())
-
-DOD_nogeo <- filter(DOD_total, is.na(GEOID10) | char < 10)
-
-DOD_nogeo_byYear <- DOD_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
-  inner_join(DOD_total_byYear) %>% mutate(pct = n/tot * 100)
-
-nrow(DOD_nogeo)/nrow(DOD_total)*100
-
-
-DOD_byYear <- group_by(death_cd, year) %>%
-  summarise(DOD = sum(DESPAIR, na.rm = TRUE))
-
-population_byCD <- group_by(population_byRaceSexAgeCD, year, CD) %>%
-  summarise(Population = sum(Population))
-
+#DoD by CD
 DOD_byCD <- group_by(death_cd, year, CD) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   mutate(year = as.numeric(year)) %>%
-  left_join(population_byCD) %>%
+  left_join(population_pop_25_64_byCD) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population)) %>%
   inner_join(CONGRESS)
 
-#Combined congresses
+#DoD by CD - combined Congresses
 DOD_byCD_2 <- group_by(death_cd, year, CD) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   mutate(year = as.numeric(year)) %>%
-  left_join(population_byCD) %>%
   inner_join(CONGRESS) %>%
+  left_join(population_pop_25_64_byCD) %>%
   group_by(CD, CONGRESS2) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population, na.rm = TRUE)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
 ################################################################################
-
+#DoD by CD, Race, Sex, and Age
 DOD_byRaceSexCD_deaths <- group_by(death_cd, CD, CONGRESS, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
-#Combined congresses
+#DoD by CD, Race, Sex, and Age - combined Congresses
 DOD_byRaceSexCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
-#Combined congresses - no sex
+#DoD by CD, Race, and Age
 DOD_byRaceCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
-#DOD - cd116
+#DoD by CD, Race, Sex, and Age - combined Congresses - 116 boundaries
 DOD_byRaceSexCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
-#DOD - cd116 - no sex
+#DoD by CD, Race, and Age - combined Congresses - 166 boundaries
 DOD_byRaceCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
-#DOD - White/Non-White
+#DoD - White/Non-White - combined Congresses
 DOD_byRace2SexCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, SEX, RACE2, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#DOD - White/Non-White - cd116
+#DoD - White/Non-White - combined Congresses - 116 boundaries
 DOD_byRace2SexCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, SEX, RACE2, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#Mortality Rates
+#DoD MR by CD, Race, Sex, and Age
 DOD_byRaceSexCD <- left_join(DOD_byRaceSexCD_deaths, population_byRaceSexAgeCD_byCongress) %>%
   group_by(CD, CONGRESS, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3)
 
-#Mortality Rates - Combined congresses 
+#DoD MR by CD, Race, Sex, and Age - combined Congresses 
 DOD_byRaceSexCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -482,10 +437,10 @@ DOD_byRaceSexCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAge
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byRaceSexCD_2, file = "./ShinyApp/DOD_byRaceSexCD_2.Rdata")
 
-#Mortality Rates - Combined congresses - no sex
+#DoD MR by CD, Race, and Age - combined Congresses 
 DOD_byRaceCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -493,32 +448,23 @@ DOD_byRaceCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byRaceCD_2, file = "./ShinyApp/DOD_byRaceCD_2.Rdata")
 
-#Mortality Rates - Combined congresses - with details
+#DoD MR by CD, Race, Sex, and Age - combined Congresses - with details
 DOD_byRaceSexCD_2_details <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3)
 
-#Mortality Rates - Combined congresses - with details - no sex
+#DoD MR by CD, Race, and Age - combined Congresses - with details
 DOD_byRaceCD_2_details <- inner_join(DOD_byRaceCD_deaths_2, population_byRaceAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, AGE_CAT_EDUC, RACE) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD))
 
-#Sensitivity analysis -- original method of pulling population
-DOD_byRaceSexCD_2_orig <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_byCongress2_orig) %>%
-  group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
-  filter(!is.na(Population), as.integer(RACE)!=3) %>%
-  select(-c(DOD, Population))
-write.csv(DOD_byRaceSexCD_2_orig, file = "DOD_byRaceSexCD_2_orig.csv")
-
-#Mortality Rates - cd116
+#DoD MR by CD, Race, Sex, and Age - combined Congresses - 116 boundaries
 DOD_byRaceSexCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -526,10 +472,7 @@ DOD_byRaceSexCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
-save(DOD_byRaceSexCD_2_cd116, file = "./ShinyApp/DOD_byRaceSexCD_2_cd116.Rdata")
-
-#Mortality Rates - cd116 - no sex
+#DoD MR by CD, Race, and Age - combined Congresses - 116 boundaries
 DOD_byRaceCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -537,35 +480,32 @@ DOD_byRaceCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byR
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byRaceCD_2_cd116, file = "./ShinyApp/DOD_byRaceCD_2_cd116.Rdata")
 
-#Mortality Rates - cd116 - with details
+#DoD MR by CD, Race, Sex, and Age - combined Congresses - 116 boundaries - with details
 DOD_byRaceSexCD_2_cd116_details <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3)
 
-#Mortality Rates - cd116 - with details - no sex
+#DoD MR by CD, Race, and Age - combined Congresses - 116 boundaries - with details
 DOD_byRaceCD_2_cd116_details <- left_join(DOD_byRaceCD_deaths_2_cd116, population_byRaceAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3)
 
-#Mortality Rates - White/Non-White 
+#DoD MR by CD, Race, Sex, and Age - combined Congresses - White/Non-White 
 DOD_byRace2SexCD_2 <- left_join(DOD_byRace2SexCD_deaths_2, population_byRace2SexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE2, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population)) %>%
-  select(-c(DOD, Population)) 
+  select(-c(DOD, Population))
 
-#Save as R Object
-save(DOD_byRace2SexCD_2, file = "./ShinyApp/DOD_byRace2SexCD_2.Rdata")
-
-#Mortality Rates - White/Non-White - no sex
+#DoD MR by CD, Race, and Age - combined Congresses - White/Non-White 
 DOD_byRace2CD_2 <- left_join(DOD_byRace2SexCD_deaths_2, population_byRace2SexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE2, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -573,10 +513,10 @@ DOD_byRace2CD_2 <- left_join(DOD_byRace2SexCD_deaths_2, population_byRace2SexAge
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byRace2CD_2, file = "./ShinyApp/DOD_byRace2CD_2.Rdata")
 
-#Mortality Rates - White/Non-White - cd116
+#DoD MR by CD, Race, Sex, and Age - combined Congresses - White/Non-White - 116 boundaries
 DOD_byRace2SexCD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, population_byRace2SexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE2, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -584,10 +524,7 @@ DOD_byRace2SexCD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, populatio
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
-save(DOD_byRace2SexCD_2_cd116, file = "./ShinyApp/DOD_byRace2SexCD_2_cd116.Rdata")
-
-#Mortality Rates - White/Non-White - cd116 - no sex
+#DoD MR by CD, Race, and Age - combined Congresses - White/Non-White - 116 boundaries
 DOD_byRace2CD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, population_byRace2SexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE2, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -595,71 +532,63 @@ DOD_byRace2CD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, population_b
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byRace2CD_2_cd116, file = "./ShinyApp/DOD_byRace2CD_2_cd116.Rdata")
   
 ################################################################################
 
-#DOD by CD - White
+#DoD by CD, Race, Sex, and Age - White
 DOD_byRaceSexCD_deaths_white <- group_by(filter(death_cd, as.integer(RACE) == 1), CD, CONGRESS, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#cd116 boundaries
+#DoD by CD, Race, Sex, and Age - White - 116 boundaries
 DOD_byRaceSexCD_deaths_white_cd116 <- group_by(filter(death_cd116, as.integer(RACE) == 1), CD, CONGRESS, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#Combined congresses
+#DoD by CD, Race, Sex, and Age - White - combined Congresses
 DOD_byRaceSexCD_deaths_white_2 <- group_by(filter(death_cd, as.integer(RACE) == 1), CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#Combined congresses
+#DoD by CD, Race, Sex, and Age - White - 116 boundaries - combined Congresses
 DOD_byRaceSexCD_deaths_white_2_cd116 <- group_by(filter(death_cd116, as.integer(RACE) == 1), CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#DOD by CD & Race - Non-Hispanic White
+#DoD MR by CD, Race, Sex, and Age - White
 DOD_byRaceSexCD_white <- inner_join(DOD_byRaceSexCD_deaths_white, population_byRaceSexAgeCD_byCongress) %>%
   group_by(CD, CONGRESS, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Combined congresses
+#DoD MR by CD, Race, Sex, and Age - White - combined Congresses
 DOD_byRaceSexCD_white_2 <- inner_join(DOD_byRaceSexCD_deaths_white_2, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Combined congresses - no sex
+#DoD MR by CD, Race, and Age - White - combined Congresses
 DOD_byRaceCD_white_2 <- inner_join(DOD_byRaceSexCD_deaths_white_2, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Combined congresses cd116
+#DoD MR by CD, Race, Sex, and Age - White - combined Congresses - 116 boundaries
 DOD_byRaceSexCD_white_2_cd116 <- inner_join(DOD_byRaceSexCD_deaths_white_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Combined congresses cd116 - no sex
+#DoD MR by CD, Race, and Age - White - combined Congresses - 116 boundaries
 DOD_byRaceCD_white_2_cd116 <- inner_join(DOD_byRaceSexCD_deaths_white_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Mortality Rates - cd116
-DOD_byRaceSexCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byRaceSexAgeCD_byCongress2) %>%
-  group_by(CD, CONGRESS2, SEX, RACE, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
-  filter(!is.na(Population), as.integer(RACE)!=3) %>%
-  select(-c(DOD, Population))
-
-#Absolute disparity by CD and Race
+#Absolute disparity by CD, Race, Sex, & Age
 DOD_byRaceSexCD_absDisparity <- full_join(DOD_byRaceSexCD, 
                                           DOD_byRaceSexCD_white, 
                                           c("CD", "CONGRESS", "SEX", "AGE_CAT_EDUC")) %>%
@@ -667,7 +596,7 @@ DOD_byRaceSexCD_absDisparity <- full_join(DOD_byRaceSexCD,
   select(-c("DOD.x", "Population.x", "DOD.y", "RACE.y", "Population.y")) %>%
   rename(RACE = "RACE.x")
 
-#Combined congresses
+#Absolute disparity by CD, Race, Sex, & Age - combined Congresses
 DOD_byRaceSexCD_absDisparity_2 <- full_join(DOD_byRaceSexCD_2_details, 
                                             DOD_byRaceSexCD_white_2, 
                                             c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
@@ -679,10 +608,7 @@ DOD_byRaceSexCD_absDisparity_2 <- full_join(DOD_byRaceSexCD_2_details,
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_absDisparity)
 
-#Save as R Object
-save(DOD_byRaceSexCD_absDisparity_2, file = "./ShinyApp/DOD_byRaceSexCD_absDisparity_2.Rdata")
-
-#Combined congresses - no sex
+#Absolute disparity by CD, Race, & Age - combined Congresses
 DOD_byRaceCD_absDisparity_2 <- full_join(DOD_byRaceCD_2_details, 
                                             DOD_byRaceCD_white_2, 
                                             c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
@@ -694,10 +620,10 @@ DOD_byRaceCD_absDisparity_2 <- full_join(DOD_byRaceCD_2_details,
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_absDisparity)
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byRaceCD_absDisparity_2, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2.Rdata")
 
-#Abs disparities - cd116 boundaries
+#Absolute disparity by CD, Race, Sex, & Age - combined Congresses - 116 boundaries
 DOD_byRaceSexCD_absDisparity_2_cd116 <- full_join(DOD_byRaceSexCD_2_cd116, 
                                                   DOD_byRaceSexCD_white_2_cd116, 
                                                   c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
@@ -705,10 +631,7 @@ DOD_byRaceSexCD_absDisparity_2_cd116 <- full_join(DOD_byRaceSexCD_2_cd116,
   select(-c("DOD", "Population", "DOD", "RACE.y", "MR", "MR_white")) %>%
   rename(RACE = "RACE.x", MR = "MR_absDisparity")
 
-#Save as R Object
-save(DOD_byRaceSexCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byRaceSexCD_absDisparity_2_cd116.Rdata")
-
-#Abs disparities - cd116 boundaries - no sex
+#Absolute disparity by CD, Race, & Age - combined Congresses - 116 boundaries
 DOD_byRaceCD_absDisparity_2_cd116 <- full_join(DOD_byRaceCD_2_cd116_details, 
                                                   DOD_byRaceCD_white_2_cd116, 
                                                   c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
@@ -721,35 +644,38 @@ DOD_byRaceCD_absDisparity_2_cd116 <- full_join(DOD_byRaceCD_2_cd116_details,
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_absDisparity)
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byRaceCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2_cd116.Rdata")
 
 ################################################################################
-
+#DoD by CD, Education, Sex, and Age
 DOD_byEducSexCD_deaths <- group_by(death_cd, CD, CONGRESS, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
+#DoD by CD, Education, Sex, and Age - combined Congresses
 DOD_byEducSexCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#no se
+#DoD by CD, Education, and Age - combined Congresses
 DOD_byEducCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#cd116 boundaries
+#DoD by CD, Education, Sex, and Age - combined Congresses - 116 boundaries
 DOD_byEducSexCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
+#DoD by CD, Education, and Age - combined Congresses - 116 boundaries
 DOD_byEducCD_deaths_2_cd116 <- group_by(death_cd116, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
+#DoD MR by CD, Education, Sex, and Age
 DOD_byEducSexCD <- left_join(DOD_byEducSexCD_deaths, population_byEducSexAgeCD_byCongress) %>%
   group_by(CD, CONGRESS, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Combined congress
+#DoD MR by CD, Education, Sex, and Age - combined Congresses
 DOD_byEducSexCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -757,10 +683,7 @@ DOD_byEducSexCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAge
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
-save(DOD_byEducSexCD_2, file = "./ShinyApp/DOD_byEducSexCD_2.Rdata")
-
-#Combined congress - no sex
+#DoD MR by CD, Education, and Age - combined Congresses
 DOD_byEducCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -768,44 +691,37 @@ DOD_byEducCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byEducCD_2, file = "./ShinyApp/DOD_byEducCD_2.Rdata")
 
-#Combined congress - with details
+#DoD MR by CD, Education, Sex, and Age - combined Congresses - with details
 DOD_byEducSexCD_2_details <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population))
 
-#Combined congress - with details - no sex
+#DoD MR by CD, Education, and Age - combined Congresses - with details
 DOD_byEducCD_2_details <- inner_join(DOD_byEducCD_deaths_2, population_byEducAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, AGE_CAT_EDUC, EDUC) %>%
   summarise(DOD = sum(DOD), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD))
 
-#Sensitivity analysis - original population pull
-DOD_byEducSexCD_2_orig <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_byCongress2_orig) %>%
-  group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
-  filter(!is.na(Population)) %>%
-  select(-c(DOD, Population))
-
-#CD116
+#DoD MR by CD, Education, Sex, and Age - combined Congresses - with details - 116 boundaries
 DOD_byEducSexCD_2_cd116_orig <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#CD116 - no sex
+#DoD MR by CD, Education, and Age - combined Congresses - with details - 116 boundaries
 DOD_byEducCD_2_cd116_details <- inner_join(DOD_byEducCD_deaths_2_cd116, population_byEducAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
+#DoD MR by CD, Education, Sex, and Age - combined Congresses - 116 boundaries
 DOD_byEducSexCD_2_cd116 <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -813,10 +729,7 @@ DOD_byEducSexCD_2_cd116 <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
-#Save as R Object
-save(DOD_byEducSexCD_2_cd116, file = "./ShinyApp/DOD_byEducSexCD_2_cd116.Rdata")
-
-#CD116 - no sex
+#DoD MR by CD, Education, and Age - combined Congresses - 116 boundaries
 DOD_byEducCD_2_cd116 <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
@@ -828,53 +741,52 @@ DOD_byEducCD_2_cd116 <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byE
 save(DOD_byEducCD_2_cd116, file = "./ShinyApp/DOD_byEducCD_2_cd116.Rdata")
 
 ################################################################################
-
-#DOD by CD - College
+#DoD by CD, Education, Sex, and Age - college
 DOD_byEducSexCD_deaths_college <- group_by(filter(death_cd, as.integer(EDUC) == 4), CD, CONGRESS, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#Combined congress
+#DoD by CD, Education, Sex, and Age - college - combined Congresses
 DOD_byEducSexCD_deaths_college_2 <- group_by(filter(death_cd, as.integer(EDUC) == 4), CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#Cd116 boundaries
+#DoD by CD, Education, Sex, and Age - college - combined Congresses - 116 boundaries
 DOD_byEducSexCD_deaths_college_2_cd116 <- group_by(filter(death_cd116, as.integer(EDUC) == 4), CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
 
-#DOD MR by CD & Educ - College
+#DoD MR by CD, Education, Sex, and Age - college
 DOD_byEducSexCD_college <- inner_join(DOD_byEducSexCD_deaths_college, population_byEducSexAgeCD_byCongress) %>%
   group_by(CD, CONGRESS, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Combined congress
+#DoD MR by CD, Education, Sex, and Age - college - combined Congresses
 DOD_byEducSexCD_college_2 <- inner_join(DOD_byEducSexCD_deaths_college_2, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Combined congress - no sex
+#DoD MR by CD, Education, and Age - college - combined Congresses
 DOD_byEducCD_college_2 <- DOD_byEducCD_2_details %>%
   filter(as.integer(EDUC)==4) %>%
   rename(MR_college = MR)
 
-#Cd116
+#DoD MR by CD, Education, Sex, and Age - college - combined Congresses - 116 boundaries
 DOD_byEducSexCD_college_2_cd116 <- inner_join(DOD_byEducSexCD_deaths_college_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Cd116 - no sex
+#DoD MR by CD, Education, and Age - college - combined Congresses - 116 boundaries
 DOD_byEducCD_college_2_cd116 <- inner_join(DOD_byEducSexCD_deaths_college_2_cd116, population_byEducSexAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
   mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
-#Absolute disparity by CD and Education
+#DoD absolute disparity by CD, Education, Sex, and Age
 DOD_byEducSexCD_absDisparity <- full_join(DOD_byEducSexCD, 
                                        DOD_byEducSexCD_college,
                                        c("CD", "CONGRESS", "SEX", "AGE_CAT_EDUC")) %>%
@@ -882,7 +794,7 @@ DOD_byEducSexCD_absDisparity <- full_join(DOD_byEducSexCD,
   select(-c("DOD.x", "Population.x", "DOD.y", "EDUC.y", "Population.y")) %>%
   rename(EDUC = "EDUC.x")
 
-#Combined congress
+#DoD absolute disparity by CD, Education, Sex, and Age - combined Congresses
 DOD_byEducSexCD_absDisparity_2 <- full_join(DOD_byEducSexCD_2, 
                                           DOD_byEducSexCD_college_2,
                                           c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
@@ -890,10 +802,7 @@ DOD_byEducSexCD_absDisparity_2 <- full_join(DOD_byEducSexCD_2,
   select(-c("EDUC.y", "DOD", "Population")) %>%
   rename(EDUC = "EDUC.x")
 
-#Save as R Object
-save(DOD_byEducSexCD_absDisparity_2, file = "./ShinyApp/DOD_byEducSexCD_absDisparity_2.Rdata")
-
-#Absolute disparities - no sex
+#DoD absolute disparities by CD, Education, and Age - combined Congresses
 DOD_byEducCD_absDisparity_2 <- full_join(DOD_byEducCD_2_details, 
                                          DOD_byEducCD_college_2,
                                          c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
@@ -905,10 +814,10 @@ DOD_byEducCD_absDisparity_2 <- full_join(DOD_byEducCD_2_details,
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, EDUC, MR_absDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_absDisparity)
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byEducCD_absDisparity_2, file = "./ShinyApp/DOD_byEducCD_absDisparity_2.Rdata")
 
-#Relative disparities
+#DoD relative disparities by CD, Education, Sex, and Age - combined Congresses
 DOD_byEducSexCD_relDisparity_2 <- full_join(DOD_byEducSexCD_2, 
                                             DOD_byEducSexCD_college_2,
                                             c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
@@ -916,7 +825,7 @@ DOD_byEducSexCD_relDisparity_2 <- full_join(DOD_byEducSexCD_2,
   select(-c("EDUC.y", "DOD", "Population")) %>%
   rename(EDUC = "EDUC.x")
 
-#Relative disparities - no sex
+#DoD relative disparities by CD, Education, and Age - combined Congresses
 DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details, 
                                             DOD_byEducCD_college_2,
                                             c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
@@ -930,7 +839,7 @@ DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details,
   select(c(CONGRESS2, CD, EDUC, AGE_CAT_EDUC, MR_relDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_relDisparity)
 
-#Combined congress - cd116
+#DoD relative disparities by CD, Education, Sex, and Age - combined Congresses - 116 boundaries
 DOD_byEducSexCD_absDisparity_2_cd116 <- full_join(DOD_byEducSexCD_2_cd116, 
                                             DOD_byEducSexCD_college_2_cd116,
                                             c("CD", "CONGRESS2", "SEX", "AGE_CAT_EDUC")) %>%
@@ -938,7 +847,7 @@ DOD_byEducSexCD_absDisparity_2_cd116 <- full_join(DOD_byEducSexCD_2_cd116,
   select(-c("EDUC.y", "DOD", "Population")) %>%
   rename(EDUC = "EDUC.x")
 
-#Combined congress - cd116 - no sex
+#DoD relative disparities by CD, Education, and Age - combined Congresses - 116 boundaries
 DOD_byEducCD_absDisparity_2_cd116 <- full_join(DOD_byEducCD_2_cd116_details, 
                                                   DOD_byEducCD_college_2_cd116,
                                                   c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
@@ -950,10 +859,10 @@ DOD_byEducCD_absDisparity_2_cd116 <- full_join(DOD_byEducCD_2_cd116_details,
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, EDUC, MR_absDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_absDisparity)
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_byEducCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byEducCD_absDisparity_2_cd116.Rdata")
 
-#Create table for paper
+#DoD absolute disparities by CD, Education, Sex, and Age table
 DOD_byEducSexCD_absDisparity_2_table <- DOD_byEducSexCD_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
@@ -991,10 +900,10 @@ DOD_byEducSexCD_absDisparity_2_table <- DOD_byEducSexCD_absDisparity_2 %>%
       select(-c(CD, SEX, AGE_CAT_EDUC))
   }) 
 
-#Write to csv
+#DoD absolute disparities by CD, Education, Sex, and Age table - write to csv
 write.csv(DOD_byEducSexCD_absDisparity_2_table, "./Final Results/DOD_byEducSexCD_absDisparity_2_table.csv", row.names = FALSE)
 
-#Create table for paper - no sex
+#DoD absolute disparities by CD, Education, and Age table
 DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(
@@ -1041,10 +950,10 @@ DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
       select(-c(CD, AGE_CAT_EDUC))
   })
 
-#Write to csv
+#DoD absolute disparities by CD, Education, and Age table - write to csv
 write.csv(DOD_byEducCD_absDisparity_2_table, "./Final Results/DOD_byEducCD_absDisparity_2_table.csv", row.names = FALSE)
 
-#Create table for paper - relative disparity
+#DoD relative disparities by CD, Education, Sex, and Age table
 DOD_byEducSexCD_relDisparity_2_table <- DOD_byEducSexCD_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(EDUC_CONGRESS = paste0(EDUC, " - ", CONGRESS2) %>%
@@ -1082,10 +991,10 @@ DOD_byEducSexCD_relDisparity_2_table <- DOD_byEducSexCD_relDisparity_2 %>%
       select(-c(CD, SEX, AGE_CAT_EDUC))
   }) 
 
-#Write to csv
+#DoD relative disparities by CD, Education, Sex, and Age table - write to csv
 write.csv(DOD_byEducSexCD_relDisparity_2_table, "./Final Results/DOD_byEducSexCD_relDisparity_2_table.csv", row.names = FALSE)
 
-#Create table for paper - relative disparity - no sex
+#DoD relative disparities by CD, Education, and Age table
 DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(
@@ -1132,7 +1041,7 @@ DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
       select(-c(CD, AGE_CAT_EDUC, se))
   })
 
-#Write to csv
+#DoD relative disparities by CD, Education, and Age table - write to csv
 write.csv(DOD_byEducCD_relDisparity_2_table, "./Final Results/DOD_byEducCD_relDisparity_2_table.csv", row.names = FALSE)
 
 ################################################################################
@@ -1200,10 +1109,6 @@ write.csv(mld_CD_educ, "Final Results/mld_CD_educ.csv", row.names = FALSE)
 
 #Get CD Maps 
 #Bountaries for cd112 from tidycensus were off
-# cd112 <- congressional_districts(state = "Pennsylvania", cb = FALSE, 
-#                                  resolution = '20m', year = 2011) %>%
-#   mutate(CD112FP = as.numeric(CD112FP), CDSESSN = as.numeric(CDSESSN)) %>%
-#   rename(CD = CD112FP, CONGRESS = CDSESSN)
 
 #Pulled shapefiles for cd111 and cd112 (same districts) from https://cdmaps.polisci.ucla.edu/
 
@@ -1228,7 +1133,6 @@ cd113 <- st_read("./Data/districts113.shp") %>% filter(STATENAME == "Pennsylvani
   select(-c("DISTRICTSI", "COUNTY", "PAGE", "LAW", "NOTE", "BESTDEC", "FINALNOTE", 
             "RNOTE", "LASTCHANGE", "FROMCOUNTY", "STARTCONG", "STATENAME", "ID", "ENDCONG")) %>%
   st_as_sf()
-
 
 cd114 <- st_read("./Data/districts114.shp") %>% filter(STATENAME == "Pennsylvania") %>%
   mutate(DISTRICT = as.numeric(DISTRICT), CONGRESS = 4) %>%
@@ -1264,66 +1168,53 @@ cd_outlines <- bind_rows(cd111, cd112, cd113, cd114) %>%
 cd_outlines_2 <- filter(cd_outlines, as.integer(CONGRESS) == 1 | as.integer(CONGRESS) == 3) %>%
   inner_join(CONGRESS2)
 
-#Cities
-#cities <- tibble(city = c("Philadelphia", "Pittsburgh"), lon = c(-39.9526, -40.4406), lat = c(75.1652, 79.9959)) %>%
-#  st_as_sf(coords = c("lon", "lat"), crs = st_crs(IMR_Maps_byCD_2))
+################################################################################
 
+#Data frames for IMR Maps
+#IMR Maps by CD
 IMR_Maps_byCD <- inner_join(cd_outlines, IMR_byCD) %>%
   group_by(CD, CONGRESS) %>%
   summarise(CD, IMR = sum(InfantMortality)/sum(LiveBirths)*1000, geometry)
 
-#Combined Congresses
+#IMR Maps by CD - combined Congresses
 IMR_Maps_byCD_2 <- inner_join(cd_outlines_2, IMR_byCD_2) %>%
   group_by(CD, CONGRESS2) %>%
   summarise(IMR = sum(InfantMortality)/sum(LiveBirths)*1000, geometry)%>%
   ungroup() %>%
   mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(IMR_Maps_byCD_2, file = "./ShinyApp/IMR_Maps_byCD_2.Rdata")
 
-#By Congress2
-IMR_111_112 <- IMR_byCD_2 %>%
-  ungroup() %>%
-  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T)) %>%
-  filter(as.integer(CONGRESS2)==1) %>%
-  select(CD, IMR, jenks)
-
-IMR_113_114 <- IMR_byCD_2 %>%
-  ungroup() %>%
-  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T)) %>%
-  filter(as.integer(CONGRESS2)==2) %>%
-  select(CD, IMR, jenks)
-
-#Save as CSV
-write.csv(IMR_111_112, "./Final Results/IMR_111_112.csv", row.names = F)
-write.csv(IMR_113_114, "./Final Results/IMR_113_114.csv", row.names = F)
-
-#IMR with CD116 Boundaries
+#IMR Maps by CD - combined Congresses - 116 boundaries
 IMR_Maps_cd116 <- inner_join(cd116, IMR_byCD_2) %>%
   select(-c(InfantMortality, LiveBirths)) %>%
   filter(as.integer(CONGRESS2)==2)%>%
   ungroup() %>%
   mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(IMR_Maps_cd116, file = "./ShinyApp/IMR_Maps_cd116.Rdata")
 
+################################################################################
+
+#Data frames for DoD Maps
+#DoD Maps by CD
 DOD_Maps_byCD <- inner_join(cd_outlines, DOD_byCD) %>%
   group_by(CD, CONGRESS) %>%
   summarise(CD, MR = sum(DOD)/sum(Population)*10000, geometry)
 
-#Combined congresses
+#DoD Maps by CD - combined Congresses
 DOD_Maps_byCD_2 <- inner_join(cd_outlines_2, DOD_byCD_2) %>%
   group_by(CD, CONGRESS2) %>%
   summarise(CD, MR)%>%
   ungroup() %>%
   mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_Maps_byCD_2, file = "./ShinyApp/DOD_Maps_byCD_2.Rdata")
 
-#By Congress2
+#By Congress2 for GIS maps
 DOD_111_112 <- DOD_byCD_2 %>%
   ungroup() %>%
   mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T)) %>%
@@ -1340,34 +1231,14 @@ DOD_113_114 <- DOD_byCD_2 %>%
 write.csv(DOD_111_112, "./Final Results/DOD_111_112.csv", row.names = F)
 write.csv(DOD_113_114, "./Final Results/DOD_113_114.csv", row.names = F)
 
-#IMR with CD116 Boundaries
+#DoD Maps by CD - combined Congresses - 116 boundaries
 DOD_Maps_cd116 <- inner_join(cd116, DOD_byCD_2) %>%
   select(-c(DOD, Population))%>%
   ungroup() %>%
   mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T))
 
-#Save as R Object
+#Save as R Object for Shiny app
 save(DOD_Maps_cd116, file = "./ShinyApp/DOD_Maps_cd116.Rdata")
-
-#CD Geometries 
-cd_geometries <- DOD_Maps_byCD_2 %>% select(c("CD", "CONGRESS2", "geometry"))
-
-#Combined IMR/DOD Maps
-IMR_DOD_Maps_byCD <- cd_geometries %>% inner_join(IMR_byCD_2) %>% inner_join(DOD_byCD_2, by = c("CD", "CONGRESS2"))
-
-################################################################################
-
-#Current maps -- attempt at mapping tracts and districts together
-cd116 <- congressional_districts(state = 'Pennsylvania', year = 2020)
-
-cd116_tracts <- tracts(state = 'Pennsylvania', year = 2020)
-
-cd116_districts_tracts_data <- bind_rows(cd116, cd116_tracts)
-
-cd116_districts_tracts <- ggplot() + 
-  geom_sf(data = cd116, size = 1, aes(fill = CD116FP, geometry = geometry)) + 
-  geom_sf(data = cd116_tracts, fill = NA, size = .1, aes(geometry = geometry))
-cd116_districts_tracts  
 
 ################################################################################
 #IMR Map - CD111-CD112
@@ -1394,7 +1265,7 @@ IMR_Map_cd113_114 <- ggplot(filter(IMR_Maps_byCD_2, as.integer(CONGRESS2)==2)) +
   labs(fill = "IMR per 1,000 Live Births")
 IMR_Map_cd113_114
 
-#IMR Maps - Combined Congresses
+#IMR Maps - combined Congresses
 IMR_Maps_2 <- ggplot(IMR_Maps_byCD_2) +
   geom_sf(aes(fill = jenks), lwd = .1) + 
   annotate("point", x = -75.1652, y = 39.9526, colour = "black", size = 2) +
@@ -1412,8 +1283,7 @@ IMR_Maps_2 <- ggplot(IMR_Maps_byCD_2) +
 IMR_Maps_2
 
 ################################################################################
-
-#Combined Congresses
+#IMR plots by CD & race-ethnicity - combined Congresses
 IMR_byCD_byRace_Plots_2 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0),
                                   aes(x = CD, y = IMR)) + 
   geom_line() + 
@@ -1434,7 +1304,7 @@ IMR_byCD_byRace_Plots_2 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP)
   coord_flip()
 IMR_byCD_byRace_Plots_2
 
-#CD111-CD112
+#IMR plots by CD & race-ethnicity - combined Congresses - CD111-CD112
 IMR_byCD_byRace_Plots_cd111_112 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 1),
                                           aes(x = CD, y = IMR)) + 
   geom_line() + 
@@ -1453,7 +1323,7 @@ IMR_byCD_byRace_Plots_cd111_112 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(R
   coord_flip()
 IMR_byCD_byRace_Plots_cd111_112
 
-#CD113-CD114
+#IMR plots by CD & race-ethnicity - combined Congresses - CD113-CD114
 IMR_byCD_byRace_Plots_cd113_114 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == 2),
                                           aes(x = CD, y = IMR)) + 
   geom_line() + 
@@ -1851,135 +1721,9 @@ IMR_DOD_Scatter <- ggplot(IMR_DOD, aes(x = IMR, y = DODMR)) +
   ylab("Deaths of Despair Mortality Rate, per 10,000")
 IMR_DOD_Scatter
 
-
-################################################################################
- #Urban/Rural/Suburban Analysis
-# cd111_urbanRural <- inner_join(tract_to_cd111, urbanRural) %>%
-#   mutate(pop_tract = as.numeric(gsub(",","", pop_tract)),
-#          pop_urban = pop_tract*urban,
-#          pop_suburban = pop_tract*suburban,
-#          pop_rural = pop_tract*rural) %>%
-#   group_by(cd111) %>%
-#   summarize(urban = sum(urban), urban_pct = round(urban/n()*100, digits = 2), 
-#             suburban = sum(suburban), suburban_pct = round(suburban/n()*100, digits = 2),
-#             rural = sum(rural), rural_pct = round(rural/n()*100, digits = 2),
-#             total = sum(urban, suburban, rural), n = n(), population_urban = sum(pop_urban),
-#             population_suburban = sum(pop_suburban), population_rural = sum(pop_rural),
-#             population = sum(pop_tract), urban_pct_pop = round(population_urban/population*100, digits = 2),
-#             suburban_pct_pop = round(population_suburban/population*100, digits = 2),
-#             rural_pct_pop = round(population_rural/population*100, digits = 2)) %>%
-#   rename(CD = cd111) %>%
-#   mutate(CONGRESS = 1)
-# 
-# cd112_urbanRural <- inner_join(tract_to_cd111, urbanRural) %>%
-#   mutate(pop_tract = as.numeric(gsub(",","", pop_tract)),
-#          pop_urban = pop_tract*urban,
-#          pop_suburban = pop_tract*suburban,
-#          pop_rural = pop_tract*rural) %>%
-#   group_by(cd111) %>%
-#   summarize(urban = sum(urban), urban_pct = round(urban/n()*100, digits = 2), 
-#             suburban = sum(suburban), suburban_pct = round(suburban/n()*100, digits = 2),
-#             rural = sum(rural), rural_pct = round(rural/n()*100, digits = 2),
-#             total = sum(urban, suburban, rural), n = n(), population_urban = sum(pop_urban),
-#             population_suburban = sum(pop_suburban), population_rural = sum(pop_rural),
-#             population = sum(pop_tract), urban_pct_pop = round(population_urban/population*100, digits = 2),
-#             suburban_pct_pop = round(population_suburban/population*100, digits = 2),
-#             rural_pct_pop = round(population_rural/population*100, digits = 2)) %>%
-#   rename(CD = cd111) %>%
-#   mutate(CONGRESS = 2)
-# 
-# cd113_urbanRural <- inner_join(tract_to_cd113, urbanRural) %>%
-#   mutate(pop_tract = as.numeric(gsub(",","", pop_tract)),
-#          pop_urban = pop_tract*urban,
-#          pop_suburban = pop_tract*suburban,
-#          pop_rural = pop_tract*rural) %>%
-#   group_by(cd113) %>%
-#   summarize(urban = sum(urban), urban_pct = round(urban/n()*100, digits = 2), 
-#             suburban = sum(suburban), suburban_pct = round(suburban/n()*100, digits = 2),
-#             rural = sum(rural), rural_pct = round(rural/n()*100, digits = 2),
-#             total = sum(urban, suburban, rural), n = n(), population_urban = sum(pop_urban),
-#             population_suburban = sum(pop_suburban), population_rural = sum(pop_rural),
-#             population = sum(pop_tract), urban_pct_pop = round(population_urban/population*100, digits = 2),
-#             suburban_pct_pop = round(population_suburban/population*100, digits = 2),
-#             rural_pct_pop = round(population_rural/population*100, digits = 2)) %>%
-#   rename(CD = cd113) %>%
-#   mutate(CONGRESS = 3)
-# 
-# cd114_urbanRural <- inner_join(tract_to_cd114, urbanRural) %>%
-#   mutate(pop_tract = as.numeric(gsub(",","", pop_tract)),
-#          pop_urban = pop_tract*urban,
-#          pop_suburban = pop_tract*suburban,
-#          pop_rural = pop_tract*rural) %>%
-#   group_by(cd114) %>%
-#   summarize(urban = sum(urban), urban_pct = round(urban/n()*100, digits = 2), 
-#             suburban = sum(suburban), suburban_pct = round(suburban/n()*100, digits = 2),
-#             rural = sum(rural), rural_pct = round(rural/n()*100, digits = 2),
-#             total = sum(urban, suburban, rural), n = n(), population_urban = sum(pop_urban),
-#             population_suburban = sum(pop_suburban), population_rural = sum(pop_rural),
-#             population = sum(pop_tract), urban_pct_pop = round(population_urban/population*100, digits = 2),
-#             suburban_pct_pop = round(population_suburban/population*100, digits = 2),
-#             rural_pct_pop = round(population_rural/population*100, digits = 2)) %>%
-#   rename(CD = cd114) %>%
-#   mutate(CONGRESS = 4)
-# 
-# cd_urbanRural <- bind_rows(cd111_urbanRural, cd112_urbanRural, cd113_urbanRural, cd114_urbanRural) %>%    
-#   mutate(min = pmin(urban_pct, suburban_pct, rural_pct),    
-#          urbanRural = case_when(    
-#            urban_pct_pop >= 60 ~ 1,    
-#            suburban_pct_pop >= 60 ~ 2,    
-#            rural_pct_pop >= 60 ~ 3,    
-#            rural_pct_pop == pmin(urban_pct_pop, suburban_pct_pop, rural_pct_pop) ~ 4,    
-#            suburban_pct_pop == pmin(urban_pct_pop, suburban_pct_pop, rural_pct_pop) ~ 5,    
-#            urban_pct_pop == pmin(urban_pct_pop, suburban_pct_pop, rural_pct_pop) ~ 6) %>%    
-#            factor(levels = c(1,2,3,4,5,6),     labels = c("Urban", "Suburban", "Rural", "Urban/Suburban", "Urban/Rural","Suburban/Rural")),    
-#          CONGRESS = factor(CONGRESS, 
-#                            levels = c(1,2,3,4),
-#                            labels = c("111 (2009 - 2010)", "112 (2011 - 2012)", 
-#                                       "113 (2013 - 2014)", "114 (2015 - 2016)")),     
-#          CD = factor(CD, labels = c("CD 01", "CD 02", "CD 03", "CD 04", "CD 05", 
-#                                     "CD 06", "CD 07", "CD 08", "CD 09", "CD 10",    
-#                                     "CD 11", "CD 12", "CD 13", "CD 14", "CD 15",     
-#                                     "CD 16", "CD 17", "CD 18", "CD 19"))) %>%    
-#   inner_join(cd_outlines)
-# 
-# cd_urbanRural_2 <- filter(cd_urbanRural, as.integer(CONGRESS) == 1 | as.integer(CONGRESS) == 3) %>%
-#   inner_join(CONGRESS2)
-# 
-# cd_urbanRural_IMR <- inner_join(cd_urbanRural, IMR_byCD) %>%
-#   select(c("CD", "CONGRESS", "urbanRural", "IMR")) %>%
-#   inner_join(CONGRESS2)
-# 
-# cd_urbanRural_IMR_2 <- inner_join(cd_urbanRural_2, IMR_byCD_2) %>%
-#   select(c("CD", "CONGRESS2", "urbanRural", "IMR"))
-# 
-# urbanRural_Maps_2 <- ggplot(cd_urbanRural_2) +
-#   geom_sf(aes(fill = urbanRural, geometry = geometry), lwd = .1) +
-#   theme_void() +
-#   theme(axis.title = element_blank(), axis.text = element_blank(), 
-#         axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5, vjust = 3),
-#         legend.position = "bottom", strip.text = element_text(size = 10)) + 
-#   ggtitle("Urban/Suburban/Rural Designation by Congressional District") +
-#   facet_wrap(~ CONGRESS2) +
-#   labs(fill = "Designation") 
-# urbanRural_Maps_2
-# ggsave(urbanRural_Maps_2, file=paste0(results_folder, "urbanRural_Maps_2.png"), device = agg_png, res = 300, units = "in",
-#        width = 10, height = 7, dpi = 300)
-# 
-# urbanRural_IMR_boxPlot <- ggplot(cd_urbanRural_IMR, aes(x = urbanRural, y = IMR)) + 
-#   geom_boxplot(aes(fill = urbanRural)) + 
-#   geom_jitter() +
-#   xlab("Urban/Rural Designation") +
-#   labs(fill = "Designation") +
-#   theme_bw() +
-#   facet_wrap(~CONGRESS2)
-# urbanRural_IMR_boxPlot
-# ggsave(urbanRural_IMR_boxPlot, file=paste0(results_folder, "urbanRural_IMR_boxPlot.png"), device = agg_png, res = 300, units = "in",
-#        width = 10, height = 7, dpi = 300)
-
 ################################################################################
 
 #Sankey diagram
-
 tract_to_111_113 <- inner_join(tract_to_cd111, tract_to_cd113) %>%
   group_by(cd111,cd113) %>%
   select(cd111,cd113) %>%
