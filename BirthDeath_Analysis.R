@@ -38,6 +38,9 @@ color_SomeCollege <- "#0072b2"
 color_Bachelor <- "#f0e442"
 
 ################################################################################
+#Create data tables for subsequent analysis
+
+#Total IMR By CD tables
 
 #Infant Mortality by CD
 infMort_byCD <- group_by(death_cd, CONGRESS, CD) %>%
@@ -64,6 +67,8 @@ IMR_byCD_2 <- inner_join(infMort_byCD_2, liveBirths_byCD_2) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
 
 ################################################################################
+
+#IMR by CD and Race Ethnicity tables
 
 #Infant Mortality by CD & race-ethnicity
 infMort_byCD_byRace <- group_by(death_cd, CONGRESS, CD, RACEHISP) %>%
@@ -125,6 +130,8 @@ IMR_byCD_byRace_2_cd116 <- inner_join(infMort_byCD_byRace_2_cd116, liveBirths_by
 save(IMR_byCD_byRace_2_cd116, file = "./ShinyApp/IMR_byCD_byRace_2_cd116.Rdata")
 
 ################################################################################
+
+#IMR by CD -race specific (for disparities analysis)
 
 #Infant Mortality by CD - Non-Hispanic White
 infMort_byCD_byRace_nhw <- group_by(filter(death_cd, as.integer(RACEHISP) ==2), CONGRESS, CD, RACEHISP) %>%
@@ -239,6 +246,7 @@ IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
 
+#Appendix Table 5
 #Absolute disparity table - write to csv
 write.csv(IMR_byCD_byRace_absDisparity_2_table, "./Final Results/IMR_byCD_byRace_absDisparity_2_table.csv", row.names = FALSE)
 
@@ -283,6 +291,7 @@ IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
 
+#Appendix Table 6
 #Relative disparity table - write to csv
 write.csv(IMR_byCD_byRace_relDisparity_2_table, "./Final Results/IMR_byCD_byRace_relDisparity_2_table.csv", row.names = FALSE)
 
@@ -301,6 +310,8 @@ IMR_byCD_byRace_absDisparity_2_cd116 <- full_join(IMR_byCD_byRace_2_cd116,
 save(IMR_byCD_byRace_absDisparity_2_cd116, file = "./ShinyApp/IMR_byCD_byRace_absDisparity_2_cd116.Rdata")
 
 ################################################################################
+
+#Total DOD by CD tables 
 
 #DoD by CD
 DOD_byCD <- group_by(death_cd, year, CD) %>%
@@ -323,6 +334,13 @@ DOD_byCD_2 <- group_by(death_cd, year, CD) %>%
   filter(!is.na(Population))
 
 ################################################################################
+#DOD by CD, race, sex and age tables (for dashboard)
+
+#GIANNI- I don't think we actually use this age-race-sex anywhere, right? The dashboard
+# only uses combined sex.  So let's delete all of this that breaks things out by sex as well. 
+#that's lines 337-871 I believe. You may need to keep some of it in to set up the
+# CD, age, race/Education analysis and tables, but let's delete the parts we're no longer using
+
 #DoD by CD, Race, Sex, and Age
 DOD_byRaceSexCD_deaths <- group_by(death_cd, CD, CONGRESS, SEX, RACE, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
@@ -371,6 +389,7 @@ DOD_byRaceSexCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAge
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object for Shiny app
 save(DOD_byRaceSexCD_2, file = "./ShinyApp/DOD_byRaceSexCD_2.Rdata")
 
@@ -382,6 +401,7 @@ DOD_byRaceCD_2 <- left_join(DOD_byRaceSexCD_deaths_2, population_byRaceSexAgeCD_
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object for Shiny app
 save(DOD_byRaceCD_2, file = "./ShinyApp/DOD_byRaceCD_2.Rdata")
 
@@ -414,6 +434,7 @@ DOD_byRaceCD_2_cd116 <- left_join(DOD_byRaceSexCD_deaths_2_cd116, population_byR
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
   select(-c(DOD, Population))
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object for Shiny app
 save(DOD_byRaceCD_2_cd116, file = "./ShinyApp/DOD_byRaceCD_2_cd116.Rdata")
 
@@ -447,6 +468,7 @@ DOD_byRace2CD_2 <- left_join(DOD_byRace2SexCD_deaths_2, population_byRace2SexAge
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object for Shiny app
 save(DOD_byRace2CD_2, file = "./ShinyApp/DOD_byRace2CD_2.Rdata")
 
@@ -466,6 +488,7 @@ DOD_byRace2CD_2_cd116 <- left_join(DOD_byRace2SexCD_deaths_2_cd116, population_b
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object for Shiny app
 save(DOD_byRace2CD_2_cd116, file = "./ShinyApp/DOD_byRace2CD_2_cd116.Rdata")
   
@@ -554,6 +577,8 @@ DOD_byRaceCD_absDisparity_2 <- full_join(DOD_byRaceCD_2_details,
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_absDisparity)
 
+#GIANNI- not sure here which app figure this is 
+
 #Save as R Object for Shiny app
 save(DOD_byRaceCD_absDisparity_2, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2.Rdata")
 
@@ -578,10 +603,13 @@ DOD_byRaceCD_absDisparity_2_cd116 <- full_join(DOD_byRaceCD_2_cd116_details,
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, RACE, MR_absDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_absDisparity)
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object for Shiny app
 save(DOD_byRaceCD_absDisparity_2_cd116, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2_cd116.Rdata")
 
 ################################################################################
+##DOD by CD, education Sex and age data tables
+
 #DoD by CD, Education, Sex, and Age
 DOD_byEducSexCD_deaths <- group_by(death_cd, CD, CONGRESS, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
@@ -625,6 +653,7 @@ DOD_byEducCD_2 <- left_join(DOD_byEducSexCD_deaths_2, population_byEducSexAgeCD_
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object for Shiny app
 save(DOD_byEducCD_2, file = "./ShinyApp/DOD_byEducCD_2.Rdata")
 
@@ -671,10 +700,13 @@ DOD_byEducCD_2_cd116 <- left_join(DOD_byEducSexCD_deaths_2_cd116, population_byE
   filter(!is.na(Population)) %>%
   select(-c(DOD, Population))
 
+#GIANNI- not sure here which app figure this is 
 #Save as R Object
 save(DOD_byEducCD_2_cd116, file = "./ShinyApp/DOD_byEducCD_2_cd116.Rdata")
 
 ################################################################################
+#DOD by CD, sex and age- education specific (for disparities analysis)
+
 #DoD by CD, Education, Sex, and Age - college
 DOD_byEducSexCD_deaths_college <- group_by(filter(death_cd, as.integer(EDUC) == 4), CD, CONGRESS, SEX, EDUC, AGE_CAT_EDUC) %>%
   summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
@@ -837,6 +869,9 @@ DOD_byEducSexCD_absDisparity_2_table <- DOD_byEducSexCD_absDisparity_2 %>%
 #DoD absolute disparities by CD, Education, Sex, and Age table - write to csv
 write.csv(DOD_byEducSexCD_absDisparity_2_table, "./Final Results/DOD_byEducSexCD_absDisparity_2_table.csv", row.names = FALSE)
 
+############################################################################
+#DoD by CD, education and age 
+
 #DoD absolute disparities by CD, Education, and Age table
 DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
@@ -884,8 +919,11 @@ DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
       select(-c(CD, AGE_CAT_EDUC))
   })
 
+#Appendix Table 7
 #DoD absolute disparities by CD, Education, and Age table - write to csv
 write.csv(DOD_byEducCD_absDisparity_2_table, "./Final Results/DOD_byEducCD_absDisparity_2_table.csv", row.names = FALSE)
+
+#GIANNI- can we delete this? 
 
 #DoD relative disparities by CD, Education, Sex, and Age table
 DOD_byEducSexCD_relDisparity_2_table <- DOD_byEducSexCD_relDisparity_2 %>%
@@ -975,10 +1013,15 @@ DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
       select(-c(CD, AGE_CAT_EDUC, se))
   })
 
+#Appendix Table 8
 #DoD relative disparities by CD, Education, and Age table - write to csv
 write.csv(DOD_byEducCD_relDisparity_2_table, "./Final Results/DOD_byEducCD_relDisparity_2_table.csv", row.names = FALSE)
 
 ################################################################################
+#Data for Maps (Figures 1 & 2 and dashboard maps)- Data + dashboard map code displayed here, but final article maps created outside of R
+
+#GIANNI- could all of this go right after the first section? (the total by CD data frame code?)
+#that would probably be cleaner than doing the disparities analysis ahead of this (especially since this is for figures 1 & 2)
 
 #Get CD Maps 
 #Bountaries for cd112 from tidycensus were off
@@ -1138,6 +1181,7 @@ IMR_Map_cd113_114 <- ggplot(filter(IMR_Maps_byCD_2, as.integer(CONGRESS2)==2)) +
   labs(fill = "IMR per 1,000 Live Births")
 IMR_Map_cd113_114
 
+#Dashboard Maps
 #IMR Maps - combined Congresses
 IMR_Maps_2 <- ggplot(IMR_Maps_byCD_2) +
   geom_sf(aes(fill = jenks), lwd = .1) + 
@@ -1156,6 +1200,9 @@ IMR_Maps_2 <- ggplot(IMR_Maps_byCD_2) +
 IMR_Maps_2
 
 ################################################################################
+
+#GIANNI- i'm not sure what figures these are all associated with 
+
 #IMR plots by CD & race-ethnicity - combined Congresses
 IMR_byCD_byRace_Plots_2 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0),
                                   aes(x = CD, y = IMR)) + 
@@ -1274,6 +1321,9 @@ IMR_absDisparity_cd113_114 <- ggplot(filter(IMR_byCD_byRace_absDisparity_2, as.i
 IMR_absDisparity_cd113_114
 
 ################################################################################
+
+#GIANNI- not sure which figures these are for
+
 #DOD Maps - CD111-CD112
 DOD_Map_cd111_112 <- ggplot(filter(DOD_Maps_byCD_2, as.integer(CONGRESS2)==1)) +
   geom_sf(aes(fill = MR), lwd = .1) +
@@ -1318,6 +1368,8 @@ DOD_Maps_2 <- ggplot(DOD_Maps_byCD_2) +
 DOD_Maps_2
 
 ################################################################################
+
+#GIANNI- we've removed these form teh app ya? so let's delete
 
 #DOD Lollipop Plots by Race, Stratified by Sex and Age Group
 #CD111-CD112
@@ -1446,6 +1498,7 @@ DOD_absDisparity_race_cd113_114 <- ggplot(filter(DOD_byRaceSexCD_absDisparity_2,
 DOD_absDisparity_race_cd113_114
 
 ################################################################################
+#GIANNI- we've also removed these right (the stratified by sex part)
 
 #DOD Lollipop Plots by Education, Stratified by Sex and Age Group
 #All years 
@@ -1471,6 +1524,8 @@ DOD_byEducSexAge_Plot <- ggplot(filter(DOD_byEducSexCD_2, MR > 0, as.integer(EDU
   coord_flip()
 DOD_byEducSexAge_Plot
 
+
+#GIANNI- is this the final figure in the app/paper?
 #All years - no sex
 DOD_byEducAge_Plot <- ggplot(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5),
                                 aes(x = CD, y = MR)) + 
@@ -1582,6 +1637,7 @@ IMR_DOD <- inner_join(IMR_byCD_2, DOD_byCD_2) %>%
   select(c(CONGRESS2, CD, IMR, MR)) %>%
   rename(DODMR = MR)
 
+#GIANNI- is this Appendix Figure 2?
 IMR_DOD_Scatter <- ggplot(IMR_DOD, aes(x = IMR, y = DODMR)) +
   geom_point(aes(color = CD)) +
   facet_wrap(~CONGRESS2) + 
@@ -1611,6 +1667,7 @@ sankey_111_113_full <- full_join(sankey_111_113, template) %>%
   arrange(from, to) %>%
   mutate_at(3, ~replace_na(.,0))
 
+#Appendix Figure 1 (and dashboard redistricting figure)
 #Save as R Object
 save(sankey_111_113_full, file = "./ShinyApp/sankey_111_113_full.Rdata")
 
