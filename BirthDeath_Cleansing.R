@@ -852,6 +852,11 @@ population_byRace2SexAgeCD_byCongress2 <- inner_join(population_byRaceSexAgeCD_b
   group_by(CD, SEX, RACE2, AGE_CAT_EDUC, CONGRESS2) %>%
   summarise(Population = sum(Population, na.rm = TRUE))
 
+#no sex
+population_byRace2AgeCD_byCongress2 <- population_byRace2SexAgeCD_byCongress2 %>%
+  group_by(CD, RACE2, AGE_CAT_EDUC, CONGRESS2) %>%
+  summarise(Population = sum(Population, na.rm = TRUE))
+
 ################################################################################
     
 popEducSexAge_all_2011 <- get_acs(geography = "congressional district", 

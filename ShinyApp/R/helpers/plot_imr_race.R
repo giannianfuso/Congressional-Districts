@@ -1,13 +1,8 @@
 #'  This function will create ggplotly for the imr_race
-#'   
-#'  This is just your code from imr_race(). WIth the following changes: 1) I import a color object which was initialized
-#'  in the app ( you should probably outsource this to an rdata earlier in your data pipe-line) 2) scale_color_manual() was
-#'  used instead of color_scale$.... 
-#'   
-#'  @param colors: this is the color object which I initialized. Try to use list data structure rather as its much easier
-#'  to organize and access values. 
-#'  @param Congress_Charts_tmp: This just takes the input$Congress_Charts as an argument.
-#'  
+#'  @param data:   
+#'  @param colors:  
+#'  @param Congress_Charts_tmp: 
+#'  @param Displayed_tmp:  
 #'  
 
 plot_imr_race = function(data, colors,  Congress_Charts_tmp, Displayed_tmp) {
