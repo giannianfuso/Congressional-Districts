@@ -24,7 +24,6 @@ select <- dplyr::select
 
 ################################################################################
 
-
 #Define global color themes to manually apply to charts
 color_AAPI <- "#50bde9"
 color_AmericanIndian <- "#009e74"
@@ -72,16 +71,6 @@ cd114 <- st_read("./Data/districts114.shp") %>% filter(STATENAME == "Pennsylvani
             "RNOTE", "LASTCHANGE", "FROMCOUNTY", "STARTCONG", "STATENAME", "ID", "ENDCONG")) %>%
   st_as_sf()
 
-cd116 <- st_read("./Data/tl_2019_us_cd116.shp") %>% filter(STATEFP == 42) %>%
-  mutate(CD = as.numeric(CD116FP) %>%
-           factor(levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
-                  labels = c("CD 01", "CD 02", "CD 03", "CD 04", "CD 05",
-                             "CD 06", "CD 07", "CD 08", "CD 09", "CD 10",
-                             "CD 11", "CD 12", "CD 13", "CD 14", "CD 15",
-                             "CD 16", "CD 17", "CD 18", "CD 19"))) %>%
-  select(c("CD", "geometry")) %>%
-  st_as_sf()
-
 #CD Map Boundaries by Congress
 cd_outlines <- bind_rows(cd111, cd112, cd113, cd114) %>%
   mutate(
@@ -117,6 +106,15 @@ liveBirths_byCD_2 <- group_by(birth_cd, CONGRESS2, CD) %>%
 #IMR by CD - combined Congresses
 IMR_byCD_2 <- inner_join(infMort_byCD_2, liveBirths_byCD_2) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
+
+IMR_byCD_wide <- IMR_byCD_2 %>%
+  pivot_wider(values_from = IMR, names_from = CONGRESS2, values_fill = 0) %>%
+  select(-c(InfantMortality, LiveBirths)) %>%
+  group_by(CD) %>%
+  summarise(across(where(is.numeric), sum))
+
+#Write to CSV
+write.csv(IMR_byCD_wide, "./Final Results/IMR_byCD_wide.csv", row.names = F)
 
 #Break out by CONGRESS2 to create data for Figure 1
 #Data for IMR Map for GIS - 111/112
@@ -162,8 +160,7 @@ save(IMR_byCD_byRace_2, file = "./ShinyApp/IMR_byCD_byRace_2.Rdata")
 #IMR by CD & race-ethnicity - combined Congresses - with details
 IMR_byCD_byRace_2_details <- inner_join(infMort_byCD_byRace_2, liveBirths_byCD_byRace_2) %>%
   filter(RACEHISP!="Unknown")%>%
-  mutate(IMR = InfantMortality/LiveBirths * 1000, paired = as.integer(CD))
-
+  mutate(IMR = InfantMortality/LiveBirths * 1000)
 
 ################################################################################
 
@@ -318,6 +315,15 @@ DOD_byCD_2 <- group_by(death_cd, year, CD) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
   filter(!is.na(Population))
 
+DoD_byCD_wide <- DOD_byCD_2 %>%
+  pivot_wider(values_from = MR, names_from = CONGRESS2, values_fill = 0) %>%
+  select(-c(DOD, Population)) %>%
+  group_by(CD) %>%
+  summarise(across(where(is.numeric), sum))
+
+#Write to CSV
+write.csv(DoD_byCD_wide, "./Final Results/DoD_byCD_wide.csv", row.names = F)
+
 #Data for DoD Map for GIS - 111/112
 DOD_111_112 <- DOD_byCD_2 %>%
   ungroup() %>%
@@ -427,7 +433,7 @@ save(DOD_byEducCD_2, file = "./ShinyApp/DOD_byEducCD_2.Rdata")
 DOD_byEducCD_2_details <- inner_join(DOD_byEducCD_deaths_2, population_byEducAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, AGE_CAT_EDUC, EDUC) %>%
   summarise(DOD = sum(DOD), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD))
+  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000))
 
 ################################################################################
 
@@ -591,19 +597,6 @@ IMR_Maps_byCD_2 <- inner_join(cd_outlines_2, IMR_byCD_2) %>%
 #Save as R Object for IMR Maps on Shiny app
 save(IMR_Maps_byCD_2, file = "./ShinyApp/IMR_Maps_byCD_2.Rdata")
 
-#Data for IMR Maps by CD - combined Congresses
-#116 boundaries used for CDs
-#DATA_YEARS represents years (in terms of CONGRESS2) from which the data comes
-IMR_Maps_cd116 <- inner_join(cd116, IMR_byCD_2) %>%
-  rename(DATA_YEARS = CONGRESS2) %>%
-  select(-c(InfantMortality, LiveBirths)) %>%
-  filter(as.integer(DATA_YEARS)==2)%>%
-  ungroup() %>%
-  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T))
-
-#Save as R Object for IMR map (116 boundaries) on Shiny app
-save(IMR_Maps_cd116, file = "./ShinyApp/IMR_Maps_cd116.Rdata")
-
 #Data for DoD Maps by CD - combined Congresses
 DOD_Maps_byCD_2 <- inner_join(cd_outlines_2, DOD_byCD_2) %>%
   group_by(CD, CONGRESS2) %>%
@@ -613,19 +606,6 @@ DOD_Maps_byCD_2 <- inner_join(cd_outlines_2, DOD_byCD_2) %>%
 
 #Save as R Object for DoD map on Shiny app
 save(DOD_Maps_byCD_2, file = "./ShinyApp/DOD_Maps_byCD_2.Rdata")
-
-#Data for DoD maps
-#116 boundaries used for CDs
-#DATA_YEARS represents years (in terms of CONGRESS2) from which the data comes
-DOD_Maps_cd116 <- inner_join(cd116, DOD_byCD_2) %>%
-  rename(DATA_YEARS = CONGRESS2) %>%
-  select(-c(DOD, Population))%>%
-  filter(as.integer(DATA_YEARS)==2)%>%
-  ungroup() %>%
-  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T))
-
-#Save as R Object for DoD map on Shiny app
-save(DOD_Maps_cd116, file = "./ShinyApp/DOD_Maps_cd116.Rdata")
 
 ################################################################################
 

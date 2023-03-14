@@ -30,10 +30,8 @@ ui <- fluidPage(
                        sidebarPanel(
                          selectInput(c("Infant Mortality Rate", "Deaths of Despair Mortality Rate"), 
                                      inputId = "Measure_Maps", label = "Select a measure"),
-                         selectInput(choices = c("111 - 112 (2010 - 2012)", "113 - 114 (2013 - 2015)", "116 (2019 - 2020)*"), 
+                         selectInput(choices = c("111 - 112 (2010 - 2012)", "113 - 114 (2013 - 2015)"), 
                                      inputId = "Congress_Maps", label = "Select a Congress"),
-                         h6("* When 116 (2019 - 2020) is selected as the congress boundary, the map shows Congress 116 boundaries
-                            using data from 2013-2015."),
                          h4("Mortality Rates:"),
                          h6("A mortality rate is a measure of the number of deaths in a particular population,
                             scaled to the size of that population. Infant Mortality Rate (IMR) calculates the 
@@ -85,14 +83,8 @@ server <- function(input, output, session) {
   #IMR map data
   load(file = "IMR_Maps_byCD_2.Rdata", envir=.GlobalEnv)
   
-  #IMR map data
-  load(file = "IMR_Maps_cd116.Rdata", envir=.GlobalEnv)
-  
   #DOD map data
   load(file = "DOD_Maps_byCD_2.Rdata", envir=.GlobalEnv)
-  
-  #DOD map data
-  load(file = "DOD_Maps_cd116.Rdata", envir=.GlobalEnv)
   
   #IMR plot data
   load(file = "IMR_byCD_byRace_2.Rdata", envir=.GlobalEnv)
@@ -145,31 +137,6 @@ server <- function(input, output, session) {
                 title = "IMR, per 1,000 <br> Live Births", opacity = 1,
                 labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)}))
     
-    imr_popup_cd116 <- paste0("<strong>", IMR_Maps_cd116$CD, 
-                              "</strong>", "<br><strong>Infant Mortality Rate: </strong>", 
-                              sprintf("%.2f", IMR_Maps_cd116$IMR))
-    
-    imr_bin_cd116 <- classIntervals(IMR_Maps_cd116$IMR,n=5,style="jenks")$brks
-    
-    imr_colors_cd116 <- colorBin("Reds", domain = as.numeric(IMR_Maps_cd116$IMR), bins = imr_bin_cd116)
-    
-    imr_colors_cd116_rev <- colorBin("Reds", domain = as.numeric(IMR_Maps_cd116$IMR), 
-                               bins = imr_bin_cd116, reverse = TRUE)
-    
-    IMR_Maps_Interactive_CD116 <- leaflet(IMR_Maps_cd116) %>%
-      addPolygons(
-        stroke = TRUE,
-        weight = 0.5,
-        color = "black",
-        fillColor = ~imr_colors_cd116(IMR),
-        fillOpacity = 0.8,
-        smoothFactor = 0.5,
-        popup = imr_popup_cd116) %>%
-      addLegend("topright", pal = imr_colors_cd116_rev, values = IMR_Maps_cd116$IMR,
-                title = "IMR, per 1,000 <br> Live Births",
-                opacity = 1,
-                labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
-    
     dod_popup <- paste0("<strong>", filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$CD, 
                         "</strong>", "<br><strong>DOD Mortality Rate: </strong>", 
                         sprintf("%.2f", filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR))
@@ -195,35 +162,9 @@ server <- function(input, output, session) {
                 opacity = 1,
                 labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
     
-    dod_popup_cd116 <- paste0("<strong>", DOD_Maps_cd116$CD, 
-                              "</strong>", "<br><strong>DOD Mortality Rate: </strong>", 
-                              sprintf("%.2f", DOD_Maps_cd116$MR))
     
-    dod_bin_cd116 <- classIntervals(DOD_Maps_cd116$MR,n=5,style="jenks")$brks
-    
-    dod_colors_cd116 <- colorBin("Reds", domain = as.numeric(DOD_Maps_cd116$MR), bins = dod_bin_cd116)
-    
-    dod_colors_cd116_rev <- colorBin("Reds", domain = as.numeric(DOD_Maps_cd116$MR), 
-                               bins = dod_bin_cd116, reverse = TRUE)
-    
-    DOD_Maps_Interactive_CD116 <- leaflet(DOD_Maps_cd116) %>%
-      addPolygons(
-        stroke = TRUE,
-        weight = 0.5,
-        color = "black",
-        fillColor = ~ dod_colors_cd116(MR),
-        fillOpacity = 0.8,
-        smoothFactor = 0.5,
-        popup = dod_popup_cd116) %>%
-      addLegend("topright", pal = dod_colors_cd116_rev, values = DOD_Maps_cd116$MR,
-                title = "DOD MR <br> per 10,000",
-                opacity = 1,
-                labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
-    
-    if(input$Congress_Maps != "116 (2019 - 2020)*" && input$Measure_Maps == "Infant Mortality Rate") {map <- IMR_Maps_Interactive}
-    if(input$Congress_Maps != "116 (2019 - 2020)*" && input$Measure_Maps == "Deaths of Despair Mortality Rate") {map <- DOD_Maps_Interactive}
-    if(input$Congress_Maps == "116 (2019 - 2020)*" && input$Measure_Maps == "Infant Mortality Rate") {map <- IMR_Maps_Interactive_CD116}
-    if(input$Congress_Maps == "116 (2019 - 2020)*" && input$Measure_Maps == "Deaths of Despair Mortality Rate") {map <- DOD_Maps_Interactive_CD116}
+    if(input$Measure_Maps == "Infant Mortality Rate") {map <- IMR_Maps_Interactive}
+    if(input$Measure_Maps == "Deaths of Despair Mortality Rate") {map <- DOD_Maps_Interactive}
     map
   })
   
