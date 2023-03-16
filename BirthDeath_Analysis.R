@@ -23,6 +23,8 @@ library(ggmap)
 select <- dplyr::select
 
 ################################################################################
+################################# Colors for Charts ############################
+################################################################################
 
 #Define global color themes to manually apply to charts
 color_AAPI <- "#50bde9"
@@ -36,6 +38,8 @@ color_HS <- "#009e73"
 color_SomeCollege <- "#0072b2"
 color_Bachelor <- "#f0e442"
 
+################################################################################
+################################## Map Boundaries ##############################
 ################################################################################
 
 #Get CD Map Boundaries
@@ -90,6 +94,8 @@ cd_outlines_2 <- filter(cd_outlines, as.integer(CONGRESS) == 1 | as.integer(CONG
   inner_join(CONGRESS2)
 
 ################################################################################
+########################## Total IMR Calculations ##############################
+################################################################################
 
 #Create data tables for subsequent analysis
 
@@ -107,13 +113,14 @@ liveBirths_byCD_2 <- group_by(birth_cd, CONGRESS2, CD) %>%
 IMR_byCD_2 <- inner_join(infMort_byCD_2, liveBirths_byCD_2) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
 
+#IMR by CD - combined Congresses - Wide for Appendix Table 6
 IMR_byCD_wide <- IMR_byCD_2 %>%
   pivot_wider(values_from = IMR, names_from = CONGRESS2, values_fill = 0) %>%
   select(-c(InfantMortality, LiveBirths)) %>%
   group_by(CD) %>%
   summarise(across(where(is.numeric), sum))
 
-#Write to CSV
+#Write to CSV - for Appendix Table 6
 write.csv(IMR_byCD_wide, "./Final Results/IMR_byCD_wide.csv", row.names = F)
 
 #Break out by CONGRESS2 to create data for Figure 1
@@ -135,6 +142,8 @@ IMR_113_114 <- IMR_byCD_2 %>%
 write.csv(IMR_111_112, "./Final Results/IMR_111_112.csv", row.names = F)
 write.csv(IMR_113_114, "./Final Results/IMR_113_114.csv", row.names = F)
 
+################################################################################
+########################### IMR by Race-Ethnicity ##############################
 ################################################################################
 
 #IMR by CD and Race-Ethnicity tables
@@ -162,8 +171,6 @@ IMR_byCD_byRace_2_details <- inner_join(infMort_byCD_byRace_2, liveBirths_byCD_b
   filter(RACEHISP!="Unknown")%>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
 
-################################################################################
-
 #IMR by CD - race-specific (for disparities analysis)
 
 #Infant Mortality by CD - Non-Hispanic White - combined Congresses
@@ -184,7 +191,11 @@ IMR_byCD_byRace_absDisparity_2 <- full_join(IMR_byCD_byRace_2_details,
                                           by = c("CONGRESS2", "CD")) %>%
   rename(RACEHISP = RACEHISP.x, LiveBirths = LiveBirths.x, LiveBirths_nhw = LiveBirths.y) %>%
   filter(as.integer(RACEHISP) < 6) %>%
-  mutate(IMR_absDisparity = (IMR-IMR_nhw), paired = as.integer(CD), IMR_raw = IMR/1000, IMR_nhw_raw = IMR_nhw/1000,
+  mutate(IMR_absDisparity = 
+           case_when(
+             IMR == 0 ~ NA_real_,
+             IMR != 0 ~ (IMR-IMR_nhw)), 
+         paired = as.integer(CD), IMR_raw = IMR/1000, IMR_nhw_raw = IMR_nhw/1000,
          se = sqrt(IMR_raw*(1-IMR_raw)/LiveBirths + IMR_nhw_raw*(1-IMR_nhw_raw)/LiveBirths_nhw)*1000, lci = str_trim(format(round(IMR_absDisparity-1.96*se,2),nsmall=2),side="both"),
          uci = str_trim(format(round(IMR_absDisparity+1.96*se,2),nsmall=2),side="both")) %>%
   select(c(CONGRESS2, CD, RACEHISP, IMR_absDisparity, paired, se, lci, uci)) %>%
@@ -200,17 +211,19 @@ IMR_byCD_byRace_relDisparity_2 <- full_join(IMR_byCD_byRace_2_details,
   rename(RACEHISP = RACEHISP.x, LiveBirths = LiveBirths.x, LiveBirths_nhw = LiveBirths.y, 
          InfantMortality = InfantMortality.x, InfantMortality_nhw = InfantMortality.y) %>%
   filter(as.integer(RACEHISP) != 7) %>%
-  mutate(IMR_relDisparity = (IMR/IMR_nhw), paired = as.integer(CD),
+  mutate(IMR_relDisparity = 
+           case_when(
+             IMR == 0 ~ NA_real_,
+             IMR != 0 ~ (IMR/IMR_nhw)), 
+         paired = as.integer(CD),
          se = sqrt((LiveBirths-InfantMortality)/(InfantMortality*LiveBirths)+(LiveBirths_nhw-InfantMortality_nhw)/(LiveBirths_nhw*InfantMortality_nhw)), 
          lci = str_trim(format(round(exp(log(IMR_relDisparity)-1.96*se),2),nsmall=2),side="both"), uci = str_trim(format(round(exp(log(IMR_relDisparity)+1.96*se),2),nsmall=2),side="both")) %>%
   select(c(CONGRESS2, CD, RACEHISP, IMR_relDisparity, paired, se, lci, uci)) %>%
   rename(IMR = IMR_relDisparity)
 
-################################################################################
-
 #IMR disparity tables for Appendix
 
-#Absolute disparity table - Appendix Table 5
+#Absolute disparity table - Appendix Table 8
 IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
          RACEHISP!="Non-Hispanic Other") %>%
@@ -222,7 +235,7 @@ IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   relocate(IMR, .before=lci)%>%
   unite("output", IMR:lci, sep=" (")%>%
   unite("output", output:uci, sep=", ")%>%
-  mutate(output = paste0(output, ")"))%>%
+  mutate(output = ifelse(grepl("NA", output), NA , paste0(output, ")")))%>%
   pivot_wider(names_from = RACEHISP_CONGRESS, values_from = output, values_fill = NA) %>%
   ungroup() %>%
   select(-c(CONGRESS2, RACEHISP, paired, se)) %>%
@@ -240,7 +253,7 @@ IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
       relocate(IMR, .before=lci)%>%
       unite("output", IMR:lci, sep=" (")%>%
       unite("output", output:uci, sep=", ")%>%
-      mutate(output = paste0(output, ")"))%>%
+      mutate(output = ifelse(grepl("NA", output), NA , paste0(output, ")")))%>%
       pivot_wider(names_from = RACEHISP_CONGRESS, values_from = output, values_fill = NA) %>%
       ungroup() %>%
       select(-c(CONGRESS2, RACEHISP, paired, se)) %>%
@@ -251,11 +264,11 @@ IMR_byCD_byRace_absDisparity_2_table <- IMR_byCD_byRace_absDisparity_2 %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
 
-#Appendix Table 5
+#Appendix Table 8
 #Absolute disparity table - write to csv
 write.csv(IMR_byCD_byRace_absDisparity_2_table, "./Final Results/IMR_byCD_byRace_absDisparity_2_table.csv", row.names = FALSE)
 
-#Relative disparity table - Appendix Table 6
+#Relative disparity table - Appendix Table 9
 IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(RACEHISP) <= 6, RACEHISP != "Non-Hispanic White",
          RACEHISP!="Non-Hispanic Other") %>%
@@ -296,10 +309,12 @@ IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
   select(-c(CD...5)) %>%
   rename(CD = CD...1)
 
-#Appendix Table 6
+#Appendix Table 9
 #Relative disparity table - write to csv
 write.csv(IMR_byCD_byRace_relDisparity_2_table, "./Final Results/IMR_byCD_byRace_relDisparity_2_table.csv", row.names = FALSE)
 
+################################################################################
+########################## Total DOD Calculations ##############################
 ################################################################################
 
 #Total DOD by CD tables 
@@ -343,6 +358,8 @@ write.csv(DOD_111_112, "./Final Results/DOD_111_112.csv", row.names = F)
 write.csv(DOD_113_114, "./Final Results/DOD_113_114.csv", row.names = F)
 
 ################################################################################
+############################# DOD by Race and Age ##############################
+################################################################################
 #DOD by CD, race, and age tables
 
 #DoD by CD, Race, and Age
@@ -381,8 +398,6 @@ DOD_byRace2CD_2 <- left_join(DOD_byRace2CD_deaths_2, population_byRace2AgeCD_byC
 
 #Save as R Object for DOD by Race (Rolled-up) plots on Shiny app
 save(DOD_byRace2CD_2, file = "./ShinyApp/DOD_byRace2CD_2.Rdata")
-  
-################################################################################
 
 #DoD by CD, race, and age - race-specific (for disparities analysis)
 
@@ -413,6 +428,8 @@ DOD_byRaceCD_absDisparity_2 <- full_join(DOD_byRaceCD_2_details,
 save(DOD_byRaceCD_absDisparity_2, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2.Rdata")
 
 ################################################################################
+########################### DOD by Education and Age ###########################
+################################################################################
 
 #DoD by CD, Education, and Age - combined Congresses
 DOD_byEducCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
@@ -435,8 +452,6 @@ DOD_byEducCD_2_details <- inner_join(DOD_byEducCD_deaths_2, population_byEducAge
   summarise(DOD = sum(DOD), Population = sum(Population)) %>%
   mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000))
 
-################################################################################
-
 #DoD by CD, Education, and Age - education-specific (for disparities analysis)
 
 #DoD by CD, Education, and Age - college - combined Congresses
@@ -456,7 +471,11 @@ DOD_byEducCD_absDisparity_2 <- full_join(DOD_byEducCD_2_details,
                                          c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
   rename(EDUC = EDUC.x, DOD = DOD.x, DOD_college = DOD.y, Population = Population.x, Population_college = Population.y) %>%
   filter(as.integer(EDUC) < 5) %>%
-  mutate(MR_absDisparity = (MR-MR_college), MR_raw = MR/1000, MR_college_raw = MR_college/1000,
+  mutate(MR_absDisparity = 
+           case_when(
+             MR == 0 ~ NA_real_,
+             MR != 0 ~ (MR-MR_college)), 
+         MR_raw = MR/1000, MR_college_raw = MR_college/1000,
          se = sqrt(MR_raw*(1-MR_raw)/Population + MR_college_raw*(1-MR_college_raw)/Population_college)*1000, lci = str_trim(format(round(MR_absDisparity-1.96*se,2),nsmall=2),side="both"),
          uci = str_trim(format(round(MR_absDisparity+1.96*se,2),nsmall=2),side="both"), paired = as.integer(CD)) %>%
   select(c(CONGRESS2, CD, AGE_CAT_EDUC, EDUC, MR_absDisparity, paired, se, lci, uci)) %>%
@@ -472,17 +491,20 @@ DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details,
   rename(EDUC = EDUC.x, Population = Population.x, Population_college = Population.y, 
          DOD = DOD.x, DOD_college = DOD.y) %>%
   filter(as.integer(EDUC)!=4) %>%
-  mutate(MR_relDisparity = (MR/MR_college), paired = as.integer(CD),
+  mutate(MR_relDisparity = 
+           case_when(
+             MR == 0 ~ NA_real_,
+             MR != 0 ~ (MR/MR_college)), 
+         paired = as.integer(CD),
          se = sqrt((Population-DOD)/(DOD*Population)+(Population_college-DOD_college)/(Population_college*DOD_college)), 
          lci = str_trim(format(round(exp(log(MR_relDisparity)-1.96*se),2),nsmall=2),side="both"), 
          uci = str_trim(format(round(exp(log(MR_relDisparity)+1.96*se),2),nsmall=2),side="both")) %>%
   select(c(CONGRESS2, CD, EDUC, AGE_CAT_EDUC, MR_relDisparity, paired, se, lci, uci)) %>%
   rename(MR = MR_relDisparity)
 
-############################################################################
 #DoD by CD, education and age - Appendix tables
 
-#DoD absolute disparities by CD, Education, and Age table - for Appendix Table 7
+#DoD absolute disparities by CD, Education, and Age table - for Appendix Table 10
 DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(
@@ -495,7 +517,7 @@ DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
   relocate(MR, .before=lci)%>%
   unite("output", MR:lci, sep=" (")%>%
   unite("output", output:uci, sep=", ")%>%
-  mutate(output = paste0(output, ")"))%>%
+  mutate(output = ifelse(grepl("NA", output), NA , paste0(output, ")")))%>%
   pivot_wider(names_from = EDUC_CONGRESS, values_from = output, values_fill = NA) %>%
   ungroup() %>%
   select(-c(CONGRESS2, EDUC, paired, se)) %>%
@@ -515,7 +537,7 @@ DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
       relocate(MR, .before=lci)%>%
       unite("output", MR:lci, sep=" (")%>%
       unite("output", output:uci, sep=", ")%>%
-      mutate(output = paste0(output, ")"))%>%
+      mutate(output = ifelse(grepl("NA", output), NA , paste0(output, ")")))%>%
       pivot_wider(names_from = EDUC_CONGRESS, values_from = output, values_fill = NA) %>%
       ungroup() %>%
       select(-c(CONGRESS2, EDUC, paired, se)) %>%
@@ -529,11 +551,11 @@ DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
       select(-c(CD, AGE_CAT_EDUC))
   })
 
-#Appendix Table 7
+#Appendix Table 10
 #DoD absolute disparities by CD, Education, and Age table - write to csv
 write.csv(DOD_byEducCD_absDisparity_2_table, "./Final Results/DOD_byEducCD_absDisparity_2_table.csv", row.names = FALSE)
 
-#DoD relative disparities by CD, Education, and Age table - For Appendix Table 8
+#DoD relative disparities by CD, Education, and Age table - For Appendix Table 11
 DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(
@@ -580,10 +602,12 @@ DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
       select(-c(CD, AGE_CAT_EDUC, se))
   })
 
-#Appendix Table 8
+#Appendix Table 11
 #DoD relative disparities by CD, Education, and Age table - write to csv
 write.csv(DOD_byEducCD_relDisparity_2_table, "./Final Results/DOD_byEducCD_relDisparity_2_table.csv", row.names = FALSE)
 
+################################################################################
+############################ IMR and DOD Map Data ##############################
 ################################################################################
 #Data frames for Maps (Figures 1 & 2 and dashboard maps) - Data + dashboard map code displayed here, but final article maps created outside of R
 
@@ -607,6 +631,8 @@ DOD_Maps_byCD_2 <- inner_join(cd_outlines_2, DOD_byCD_2) %>%
 #Save as R Object for DoD map on Shiny app
 save(DOD_Maps_byCD_2, file = "./ShinyApp/DOD_Maps_byCD_2.Rdata")
 
+################################################################################
+############################### IMR and DOD Maps ###############################
 ################################################################################
 
 #R versions of IMR and DoD Maps
@@ -647,6 +673,8 @@ DOD_Maps_2 <- ggplot(DOD_Maps_byCD_2) +
   labs(fill = "Mortality Rate, \nper 10,000 People")
 DOD_Maps_2
 
+################################################################################
+############################### IMR and DOD Plots ##############################
 ################################################################################
 
 #IMR and DoD Plots (Figure 3 and Figure 4)
@@ -697,7 +725,6 @@ DOD_byEducAge_Plot <- ggplot(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5
   coord_flip()
 DOD_byEducAge_Plot
 
-################################################################################
 #Data frame for IMR DOD Scatterplot - Appendix Figure 2
 IMR_DOD <- inner_join(IMR_byCD_2, DOD_byCD_2) %>%
   select(c(CONGRESS2, CD, IMR, MR)) %>%
@@ -717,6 +744,8 @@ IMR_DOD_Scatter <- ggplot(IMR_DOD, aes(x = IMR, y = DODMR)) +
   ylab("Deaths of Despair Mortality Rate, per 10,000")
 IMR_DOD_Scatter
 
+################################################################################
+################################# Sankey Diagram ###############################
 ################################################################################
 
 #Data frame for sankey showing relationship between census tracts from 111/112 to 113/114

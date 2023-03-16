@@ -593,7 +593,7 @@ pop_pop_25_64_2016 <- get_acs(geography = "congressional district",
   left_join(var_names) %>%
   mutate(year = 2015)
 
-#Total population estimates by congressional district by sex, ages 25 to 64
+#Population estimates for each congressional district by age, ages 25 to 64
 population_pop_25_64_byCD <- bind_rows(pop_25_64_2011, pop_pop_25_64_2016) %>%
   rename(Population = estimate) %>%
   mutate(
@@ -644,6 +644,7 @@ popEducSexAge_all_2016 <- get_acs(geography = "congressional district",
   left_join(var_names) %>%
   mutate(year = 2015)
 
+#Population estimates for each congressional district by education and age, ages 25 to 64
 population_byEducAgeCD_byCongress2 <- bind_rows(popEducSexAge_all_2011, popEducSexAge_all_2016) %>%
   rename(Population = estimate) %>%
   mutate(
@@ -678,8 +679,8 @@ population_byEducAgeCD_byCongress2 <- bind_rows(popEducSexAge_all_2011, popEducS
       factor(levels = c(1,2,3,4,5,6),
              labels = c("Under 18 years", "18 to 24 years", "25 to 34 years",
                         "35 to 44 years", "45 to 64 years", "65 years and over"))) %>%
-  select(c(CD, SEX, EDUC, AGE_CAT_EDUC, year, Population)) %>%
-  group_by(CD, SEX, EDUC, AGE_CAT_EDUC, year) %>%
+  select(c(CD, EDUC, AGE_CAT_EDUC, year, Population)) %>%
+  group_by(CD, EDUC, AGE_CAT_EDUC, year) %>%
   summarise(Population = sum(Population)) %>%
   ungroup() %>%
   inner_join(CONGRESS)%>%
@@ -720,8 +721,8 @@ popRaceSexAge_all_2016 <- get_acs(geography = "congressional district",
   left_join(var_names) %>%
   mutate(year = 2015)
 
-#Total population estimates by congressional district by race and sex, ages 25 to 64
-population_byRaceSexAgeCD <- bind_rows(popRaceSexAge_all_2011, popRaceSexAge_all_2016) %>%
+#Population estimates for each congressional district by race and age, ages 25 to 64
+population_byRaceAgeCD_byCongress2 <- bind_rows(popRaceSexAge_all_2011, popRaceSexAge_all_2016) %>%
   rename(Population = estimate) %>%
   mutate(
     Population = Population * 3,
@@ -758,39 +759,15 @@ population_byRaceSexAgeCD <- bind_rows(popRaceSexAge_all_2011, popRaceSexAge_all
                         "25 to 29 years", "30 to 34 years", "35 to 44 years",
                         "45 to 54 years", "55 to 64 years", "65 to 74 years",
                         "75 to 84 years", "85 years and over"))) %>%
-  select(c(CD, SEX, RACE, AGE_CAT, year, Population)) %>%
-  group_by(CD, SEX, RACE, AGE_CAT, year) %>%
+  inner_join(AGE_CATS) %>%
+  select(c(CD, RACE, AGE_CAT_EDUC, year, Population)) %>%
+  group_by(CD, RACE, AGE_CAT_EDUC, year) %>%
   summarise(Population = sum(Population)) %>%
   ungroup() %>%
   inner_join(CONGRESS) %>%
-  inner_join(AGE_CATS)
+  select(-c(year, CONGRESS))
 
-population_byRaceSexAgeCD_byCongress <- population_byRaceSexAgeCD%>%
-  group_by(CD, SEX, RACE, AGE_CAT_EDUC, CONGRESS) %>%
-  summarise(Population = sum(Population, na.rm = TRUE))
-
-population_byRace2SexAgeCD_byCongress <- inner_join(population_byRaceSexAgeCD_byCongress, RACE2) %>%
-  group_by(CD, SEX, RACE2, AGE_CAT_EDUC, CONGRESS) %>%
-  summarise(Population = sum(Population, na.rm = TRUE))
-
-population_byRaceSexAgeCD_byCongress2 <- population_byRaceSexAgeCD %>%
-  group_by(CD, SEX, RACE, AGE_CAT_EDUC, CONGRESS2) %>%
-  summarise(Population = sum(Population, na.rm = TRUE))
-
-#no sex
-population_byRaceAgeCD_byCongress2 <- population_byRaceSexAgeCD_byCongress2 %>%
-  group_by(CD, RACE, AGE_CAT_EDUC, CONGRESS2) %>%
-  summarise(Population = sum(Population, na.rm = TRUE))
-
-population_byRace2SexAgeCD_byCongress2 <- inner_join(population_byRaceSexAgeCD_byCongress2, RACE2) %>%
-  group_by(CD, SEX, RACE2, AGE_CAT_EDUC, CONGRESS2) %>%
-  summarise(Population = sum(Population, na.rm = TRUE))
-
-#no sex
-population_byRace2AgeCD_byCongress2 <- population_byRace2SexAgeCD_byCongress2 %>%
+#Population estimates for each congressional district by race (rolled-up) and age, ages 25 to 64
+population_byRace2AgeCD_byCongress2 <- inner_join(population_byRaceAgeCD_byCongress2, RACE2) %>%
   group_by(CD, RACE2, AGE_CAT_EDUC, CONGRESS2) %>%
   summarise(Population = sum(Population, na.rm = TRUE))
-
-################################################################################
-    
-

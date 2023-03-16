@@ -1,15 +1,17 @@
 
+#All results come from BirthDeath_Analysis.R
+
 #Figure 1 - Map of IMR rates over CD's
 figure1 <- IMR_Maps_2
 figure1
 ggsave("./Final Results/figure1.pdf", plot = figure1, width = 9, height = 12.5)
-ggsave("./Final Results/figure1.png")
+ggsave("./Final Results/figure1.png", plot = figure1, width = 9, height = 12.5)
 
 #Figure 2 - Map of overall DOD over CD'2 -- by overall, do we mean MR?
 figure2 <- DOD_Maps_2
 figure2
 ggsave("./Final Results/figure2.pdf", plot = figure2, width = 9, height = 12.5)
-ggsave("./Final Results/figure2.png", plot = figure2, width = 8.5, height = 11)
+ggsave("./Final Results/figure2.png", plot = figure2, width = 9, height = 12.5)
 
 #Figure 3 - IMR by race/ethnicity
 figure3 <- IMR_byCD_byRace_Plots_2
@@ -21,7 +23,7 @@ ggsave("./Final Results/figure3.png", plot = figure3, width = 11, height = 11)
 figure4 <- DOD_byEducAge_Plot
 figure4
 ggsave("./Final Results/figure4.pdf", figure4, width = 15, height = 13)
-ggsave("./Final Results/figure4.png", figure4, width = 30, height = 20)
+ggsave("./Final Results/figure4.png", figure4, width = 15, height = 13)
 
 appendix_figure1 <- sankey
 appendix_figure1
