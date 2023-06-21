@@ -1,3 +1,6 @@
+
+# Libraries ---------------------------------------------------------------
+
 library(tidyverse)
 library(foreign)
 library(tidycensus)
@@ -10,7 +13,7 @@ library(tigris)
 library(leaflet)
 library(scico)
 library(ragg)
-library("writexl")
+library(writexl)
 library(highcharter)
 library(htmlwidgets)
 library(ggalluvial)
@@ -22,9 +25,7 @@ library(classInt)
 library(ggmap)
 select <- dplyr::select
 
-################################################################################
-################################# Colors for Charts ############################
-################################################################################
+# Colors for Charts -------------------------------------------------------
 
 #Define global color themes to manually apply to charts
 color_AAPI <- "#50bde9"
@@ -38,9 +39,7 @@ color_HS <- "#009e73"
 color_SomeCollege <- "#0072b2"
 color_Bachelor <- "#f0e442"
 
-################################################################################
-################################## Map Boundaries ##############################
-################################################################################
+# Map Boundaries ----------------------------------------------------------
 
 #Get CD Map Boundaries
 
@@ -51,6 +50,7 @@ cd111 <- st_read("./Data/districts111.shp") %>% filter(STATENAME == "Pennsylvani
   rename(CD = DISTRICT) %>%
   select(-c("DISTRICTSI", "COUNTY", "PAGE", "LAW", "NOTE", "BESTDEC", "FINALNOTE", 
             "RNOTE", "LASTCHANGE", "FROMCOUNTY", "STARTCONG", "ENDCONG", "STATENAME", "ID")) %>%
+  #st_transform("NAD83") %>%
   st_as_sf()
 
 cd112 <- st_read("./Data/districts112.shp") %>% filter(STATENAME == "Pennsylvania") %>%
@@ -58,6 +58,7 @@ cd112 <- st_read("./Data/districts112.shp") %>% filter(STATENAME == "Pennsylvani
   rename(CD = DISTRICT) %>%
   select(-c("DISTRICTSI", "COUNTY", "PAGE", "LAW", "NOTE", "BESTDEC", "FINALNOTE", 
             "RNOTE", "LASTCHANGE", "FROMCOUNTY", "STARTCONG", "STATENAME", "ID", "ENDCONG")) %>%
+  #st_transform("NAD83") %>%
   st_as_sf()
 
 #113 and 114 boundaries are the same
@@ -66,6 +67,7 @@ cd113 <- st_read("./Data/districts113.shp") %>% filter(STATENAME == "Pennsylvani
   rename(CD = DISTRICT) %>%
   select(-c("DISTRICTSI", "COUNTY", "PAGE", "LAW", "NOTE", "BESTDEC", "FINALNOTE", 
             "RNOTE", "LASTCHANGE", "FROMCOUNTY", "STARTCONG", "STATENAME", "ID", "ENDCONG")) %>%
+  st_transform(st_crs(cd111)) %>%
   st_as_sf()
 
 cd114 <- st_read("./Data/districts114.shp") %>% filter(STATENAME == "Pennsylvania") %>%
@@ -73,6 +75,7 @@ cd114 <- st_read("./Data/districts114.shp") %>% filter(STATENAME == "Pennsylvani
   rename(CD = DISTRICT) %>%
   select(-c("DISTRICTSI", "COUNTY", "PAGE", "LAW", "NOTE", "BESTDEC", "FINALNOTE", 
             "RNOTE", "LASTCHANGE", "FROMCOUNTY", "STARTCONG", "STATENAME", "ID", "ENDCONG")) %>%
+  st_transform(st_crs(cd111)) %>%
   st_as_sf()
 
 #CD Map Boundaries by Congress
@@ -93,9 +96,7 @@ cd_outlines <- bind_rows(cd111, cd112, cd113, cd114) %>%
 cd_outlines_2 <- filter(cd_outlines, as.integer(CONGRESS) == 1 | as.integer(CONGRESS) == 3) %>%
   inner_join(CONGRESS2)
 
-################################################################################
-########################## Total IMR Calculations ##############################
-################################################################################
+# Total IMR Calculations --------------------------------------------------
 
 #Create data tables for subsequent analysis
 
@@ -113,14 +114,14 @@ liveBirths_byCD_2 <- group_by(birth_cd, CONGRESS2, CD) %>%
 IMR_byCD_2 <- inner_join(infMort_byCD_2, liveBirths_byCD_2) %>%
   mutate(IMR = InfantMortality/LiveBirths * 1000)
 
-#IMR by CD - combined Congresses - Wide for Appendix Table 6
+#IMR by CD - combined Congresses - Wide for Appendix Table 7
 IMR_byCD_wide <- IMR_byCD_2 %>%
   pivot_wider(values_from = IMR, names_from = CONGRESS2, values_fill = 0) %>%
   select(-c(InfantMortality, LiveBirths)) %>%
   group_by(CD) %>%
   summarise(across(where(is.numeric), sum))
 
-#Write to CSV - for Appendix Table 6
+#Write to CSV - for Appendix Table 7
 write.csv(IMR_byCD_wide, "./Final Results/IMR_byCD_wide.csv", row.names = F)
 
 #Break out by CONGRESS2 to create data for Figure 1
@@ -142,9 +143,7 @@ IMR_113_114 <- IMR_byCD_2 %>%
 write.csv(IMR_111_112, "./Final Results/IMR_111_112.csv", row.names = F)
 write.csv(IMR_113_114, "./Final Results/IMR_113_114.csv", row.names = F)
 
-################################################################################
-########################### IMR by Race-Ethnicity ##############################
-################################################################################
+# IMR by Race-Ethnicity ---------------------------------------------------
 
 #IMR by CD and Race-Ethnicity tables
 
@@ -313,26 +312,24 @@ IMR_byCD_byRace_relDisparity_2_table <- IMR_byCD_byRace_relDisparity_2 %>%
 #Relative disparity table - write to csv
 write.csv(IMR_byCD_byRace_relDisparity_2_table, "./Final Results/IMR_byCD_byRace_relDisparity_2_table.csv", row.names = FALSE)
 
-################################################################################
-########################## Total DOD Calculations ##############################
-################################################################################
+# Total DoD Calculations --------------------------------------------------
 
-#Total DOD by CD tables 
+#Total DoD by CD tables 
 
 #DoD by CD - combined Congresses
-DOD_byCD_2 <- group_by(death_cd, year, CD) %>%
-  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
+DoD_byCD_2 <- group_by(death_cd, year, CD) %>%
+  summarise(DoD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   mutate(year = as.numeric(year)) %>%
   inner_join(CONGRESS) %>%
   left_join(population_pop_25_64_byCD) %>%
   group_by(CD, CONGRESS2) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population, na.rm = TRUE)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
+  summarise(DoD = sum(DoD, na.rm = TRUE), Population = sum(Population, na.rm = TRUE)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DoD/Population*10000)) %>%
   filter(!is.na(Population))
 
-DoD_byCD_wide <- DOD_byCD_2 %>%
+DoD_byCD_wide <- DoD_byCD_2 %>%
   pivot_wider(values_from = MR, names_from = CONGRESS2, values_fill = 0) %>%
-  select(-c(DOD, Population)) %>%
+  select(-c(DoD, Population)) %>%
   group_by(CD) %>%
   summarise(across(where(is.numeric), sum))
 
@@ -340,83 +337,82 @@ DoD_byCD_wide <- DOD_byCD_2 %>%
 write.csv(DoD_byCD_wide, "./Final Results/DoD_byCD_wide.csv", row.names = F)
 
 #Data for DoD Map for GIS - 111/112
-DOD_111_112 <- DOD_byCD_2 %>%
+DoD_111_112 <- DoD_byCD_2 %>%
   ungroup() %>%
   mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T)) %>%
   filter(as.integer(CONGRESS2)==1) %>%
   select(CD, MR, jenks)
 
 #Data for DoD Map for GIS - 113/114
-DOD_113_114 <- DOD_byCD_2 %>%
+DoD_113_114 <- DoD_byCD_2 %>%
   ungroup() %>%
   mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T)) %>%
   filter(as.integer(CONGRESS2)==2) %>%
   select(CD, MR, jenks)
 
 #Save as CSVs to create DoD maps in GIS
-write.csv(DOD_111_112, "./Final Results/DOD_111_112.csv", row.names = F)
-write.csv(DOD_113_114, "./Final Results/DOD_113_114.csv", row.names = F)
+write.csv(DoD_111_112, "./Final Results/DoD_111_112.csv", row.names = F)
+write.csv(DoD_113_114, "./Final Results/DoD_113_114.csv", row.names = F)
 
-################################################################################
-############################# DOD by Race and Age ##############################
-################################################################################
-#DOD by CD, race, and age tables
+# DoD by Race and Age -----------------------------------------------------
+
+#DoD by CD, race, and age tables
 
 #DoD by CD, Race, and Age
-DOD_byRaceCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
+DoD_byRaceCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
+  summarise(DoD = sum(DESPAIR_CD, na.rm = TRUE)) %>%
   filter(as.integer(RACE)!=3) #Remove american indian alaksa native
 
 #DoD MR by CD, Race, and Age - combined Congresses 
-DOD_byRaceCD_2 <- left_join(DOD_byRaceCD_deaths_2, population_byRaceAgeCD_byCongress2) %>%
+DoD_byRaceCD_2 <- left_join(DoD_byRaceCD_deaths_2, population_byRaceAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  summarise(DoD = sum(DoD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DoD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population), as.integer(RACE)!=3) %>%
-  select(-c(DOD, Population))
+  select(-c(DoD, Population))
 
-#Save as R Object for DOD by Race plots on Shiny app
-save(DOD_byRaceCD_2, file = "./ShinyApp/DOD_byRaceCD_2.Rdata")
+#Save as R Object for DoD by Race plots on Shiny app
+save(DoD_byRaceCD_2, file = "./ShinyApp/DoD_byRaceCD_2.Rdata")
 
 #DoD MR by CD, Race, and Age - combined Congresses - with details
-DOD_byRaceCD_2_details <- inner_join(DOD_byRaceCD_deaths_2, population_byRaceAgeCD_byCongress2) %>%
+DoD_byRaceCD_2_details <- inner_join(DoD_byRaceCD_deaths_2, population_byRaceAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, AGE_CAT_EDUC, RACE) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD))
+  summarise(DoD = sum(DoD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DoD/Population*10000), paired = as.integer(CD))
 
 #DoD by CD, Race, and Age - combined Congresses - White/Non-White 
-DOD_byRace2CD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, RACE2, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
+DoD_byRace2CD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, RACE2, AGE_CAT_EDUC) %>%
+  summarise(DoD = sum(DESPAIR_CD, na.rm = TRUE))
 
 #DoD MR by CD, Race, and Age - combined Congresses - White/Non-White 
-DOD_byRace2CD_2 <- left_join(DOD_byRace2CD_deaths_2, population_byRace2AgeCD_byCongress2) %>%
+DoD_byRace2CD_2 <- left_join(DoD_byRace2CD_deaths_2, population_byRace2AgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE2, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  summarise(DoD = sum(DoD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DoD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population)) %>%
-  select(-c(DOD, Population))
+  select(-c(DoD, Population))
 
-#Save as R Object for DOD by Race (Rolled-up) plots on Shiny app
-save(DOD_byRace2CD_2, file = "./ShinyApp/DOD_byRace2CD_2.Rdata")
+#Save as R Object for DoD by Race (Rolled-up) plots on Shiny app
+save(DoD_byRace2CD_2, file = "./ShinyApp/DoD_byRace2CD_2.Rdata")
 
 #DoD by CD, race, and age - race-specific (for disparities analysis)
 
 #DoD by CD, Race, and Age - White - combined Congresses
-DOD_byRaceCD_deaths_white_2 <- group_by(filter(death_cd, as.integer(RACE) == 1), CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
+DoD_byRaceCD_deaths_white_2 <- group_by(filter(death_cd, as.integer(RACE) == 1), CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
+  summarise(DoD = sum(DESPAIR_CD, na.rm = TRUE))
 
 #DoD MR by CD, Race, and Age - White - combined Congresses
-DOD_byRaceCD_white_2 <- inner_join(DOD_byRaceCD_deaths_white_2, population_byRaceAgeCD_byCongress2) %>%
+DoD_byRaceCD_white_2 <- inner_join(DoD_byRaceCD_deaths_white_2, population_byRaceAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, RACE, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR_white = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
+  summarise(DoD = sum(DoD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR_white = ifelse(Population == 0, 0, DoD/Population*10000)) %>%
   filter(!is.na(Population))
 
 #Absolute disparity by CD, Race, & Age - combined Congresses
-DOD_byRaceCD_absDisparity_2 <- full_join(DOD_byRaceCD_2_details, 
-                                            DOD_byRaceCD_white_2, 
+DoD_byRaceCD_absDisparity_2 <- full_join(DoD_byRaceCD_2_details, 
+                                            DoD_byRaceCD_white_2, 
                                             c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
-  rename(RACE = RACE.x, DOD = DOD.x, DOD_white= DOD.y, Population = Population.x, Population_white = Population.y) %>%
+  rename(RACE = RACE.x, DoD = DoD.x, DoD_white= DoD.y, Population = Population.x, Population_white = Population.y) %>%
   filter(as.integer(RACE) < 5) %>%
   mutate(MR_absDisparity = (MR-MR_white), MR_raw = MR/1000, MR_white_raw = MR_white/1000,
          se = sqrt(MR_raw*(1-MR_raw)/Population + MR_white_raw*(1-MR_white_raw)/Population_white)*1000, lci = str_trim(format(round(MR_absDisparity-1.96*se,2),nsmall=2),side="both"),
@@ -425,51 +421,49 @@ DOD_byRaceCD_absDisparity_2 <- full_join(DOD_byRaceCD_2_details,
   rename(MR = MR_absDisparity)
 
 #Save as R Object for DoD by Race absolute disparity plots on Shiny app
-save(DOD_byRaceCD_absDisparity_2, file = "./ShinyApp/DOD_byRaceCD_absDisparity_2.Rdata")
+save(DoD_byRaceCD_absDisparity_2, file = "./ShinyApp/DoD_byRaceCD_absDisparity_2.Rdata")
 
-################################################################################
-########################### DOD by Education and Age ###########################
-################################################################################
+# DoD by Education and Age ------------------------------------------------
 
 #DoD by CD, Education, and Age - combined Congresses
-DOD_byEducCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
+DoD_byEducCD_deaths_2 <- group_by(death_cd, CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DoD = sum(DESPAIR_CD, na.rm = TRUE))
 
 #DoD MR by CD, Education, and Age - combined Congresses
-DOD_byEducCD_2 <- left_join(DOD_byEducCD_deaths_2, population_byEducAgeCD_byCongress2) %>%
+DoD_byEducCD_2 <- left_join(DoD_byEducCD_deaths_2, population_byEducAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000), paired = as.integer(CD)) %>%
+  summarise(DoD = sum(DoD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DoD/Population*10000), paired = as.integer(CD)) %>%
   filter(!is.na(Population)) %>%
-  select(-c(DOD, Population))
+  select(-c(DoD, Population))
 
-#Save as R Object for DOD by education for Shiny app
-save(DOD_byEducCD_2, file = "./ShinyApp/DOD_byEducCD_2.Rdata")
+#Save as R Object for DoD by education for Shiny app
+save(DoD_byEducCD_2, file = "./ShinyApp/DoD_byEducCD_2.Rdata")
 
 #DoD MR by CD, Education, and Age - combined Congresses - with details
-DOD_byEducCD_2_details <- inner_join(DOD_byEducCD_deaths_2, population_byEducAgeCD_byCongress2) %>%
+DoD_byEducCD_2_details <- inner_join(DoD_byEducCD_deaths_2, population_byEducAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, AGE_CAT_EDUC, EDUC) %>%
-  summarise(DOD = sum(DOD), Population = sum(Population)) %>%
-  mutate(MR = ifelse(Population == 0, 0, DOD/Population*10000))
+  summarise(DoD = sum(DoD), Population = sum(Population)) %>%
+  mutate(MR = ifelse(Population == 0, 0, DoD/Population*10000))
 
 #DoD by CD, Education, and Age - education-specific (for disparities analysis)
 
 #DoD by CD, Education, and Age - college - combined Congresses
-DOD_byEducCD_deaths_college_2 <- group_by(filter(death_cd, as.integer(EDUC) == 4), CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DESPAIR_CD, na.rm = TRUE))
+DoD_byEducCD_deaths_college_2 <- group_by(filter(death_cd, as.integer(EDUC) == 4), CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
+  summarise(DoD = sum(DESPAIR_CD, na.rm = TRUE))
 
 #DoD MR by CD, Education, and Age - college - combined Congresses
-DOD_byEducCD_college_2 <- inner_join(DOD_byEducCD_deaths_college_2, population_byEducAgeCD_byCongress2) %>%
+DoD_byEducCD_college_2 <- inner_join(DoD_byEducCD_deaths_college_2, population_byEducAgeCD_byCongress2) %>%
   group_by(CD, CONGRESS2, EDUC, AGE_CAT_EDUC) %>%
-  summarise(DOD = sum(DOD, na.rm = TRUE), Population = sum(Population)) %>%
-  mutate(MR_college = ifelse(Population == 0, 0, DOD/Population*10000)) %>%
+  summarise(DoD = sum(DoD, na.rm = TRUE), Population = sum(Population)) %>%
+  mutate(MR_college = ifelse(Population == 0, 0, DoD/Population*10000)) %>%
   filter(!is.na(Population))
 
 #DoD absolute disparities by CD, Education, and Age - combined Congresses
-DOD_byEducCD_absDisparity_2 <- full_join(DOD_byEducCD_2_details, 
-                                         DOD_byEducCD_college_2,
+DoD_byEducCD_absDisparity_2 <- full_join(DoD_byEducCD_2_details, 
+                                         DoD_byEducCD_college_2,
                                          c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
-  rename(EDUC = EDUC.x, DOD = DOD.x, DOD_college = DOD.y, Population = Population.x, Population_college = Population.y) %>%
+  rename(EDUC = EDUC.x, DoD = DoD.x, DoD_college = DoD.y, Population = Population.x, Population_college = Population.y) %>%
   filter(as.integer(EDUC) < 5) %>%
   mutate(MR_absDisparity = 
            case_when(
@@ -482,21 +476,21 @@ DOD_byEducCD_absDisparity_2 <- full_join(DOD_byEducCD_2_details,
   rename(MR = MR_absDisparity)
 
 #Save as R Object for DoD Absolute Disparities charts on Shiny app
-save(DOD_byEducCD_absDisparity_2, file = "./ShinyApp/DOD_byEducCD_absDisparity_2.Rdata")
+save(DoD_byEducCD_absDisparity_2, file = "./ShinyApp/DoD_byEducCD_absDisparity_2.Rdata")
 
 #DoD relative disparities by CD, Education, and Age - combined Congresses
-DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details, 
-                                            DOD_byEducCD_college_2,
+DoD_byEducCD_relDisparity_2 <- full_join(DoD_byEducCD_2_details, 
+                                            DoD_byEducCD_college_2,
                                             c("CD", "CONGRESS2", "AGE_CAT_EDUC")) %>%
   rename(EDUC = EDUC.x, Population = Population.x, Population_college = Population.y, 
-         DOD = DOD.x, DOD_college = DOD.y) %>%
+         DoD = DoD.x, DoD_college = DoD.y) %>%
   filter(as.integer(EDUC)!=4) %>%
   mutate(MR_relDisparity = 
            case_when(
              MR == 0 ~ NA_real_,
              MR != 0 ~ (MR/MR_college)), 
          paired = as.integer(CD),
-         se = sqrt((Population-DOD)/(DOD*Population)+(Population_college-DOD_college)/(Population_college*DOD_college)), 
+         se = sqrt((Population-DoD)/(DoD*Population)+(Population_college-DoD_college)/(Population_college*DoD_college)), 
          lci = str_trim(format(round(exp(log(MR_relDisparity)-1.96*se),2),nsmall=2),side="both"), 
          uci = str_trim(format(round(exp(log(MR_relDisparity)+1.96*se),2),nsmall=2),side="both")) %>%
   select(c(CONGRESS2, CD, EDUC, AGE_CAT_EDUC, MR_relDisparity, paired, se, lci, uci)) %>%
@@ -505,7 +499,7 @@ DOD_byEducCD_relDisparity_2 <- full_join(DOD_byEducCD_2_details,
 #DoD by CD, education and age - Appendix tables
 
 #DoD absolute disparities by CD, Education, and Age table - for Appendix Table 10
-DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
+DoD_byEducCD_absDisparity_2_table <- DoD_byEducCD_absDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(
     MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
@@ -525,7 +519,7 @@ DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
   summarise_all(list(~.[which.min(is.na(.))])) %>%
   arrange(AGE_CAT_EDUC, CD) %>%
   bind_cols({
-    DOD_byEducCD_absDisparity_2 %>%
+    DoD_byEducCD_absDisparity_2 %>%
       filter(as.integer(CONGRESS2) == 2, as.integer(EDUC) < 4) %>%
       mutate(
         MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
@@ -553,10 +547,10 @@ DOD_byEducCD_absDisparity_2_table <- DOD_byEducCD_absDisparity_2 %>%
 
 #Appendix Table 10
 #DoD absolute disparities by CD, Education, and Age table - write to csv
-write.csv(DOD_byEducCD_absDisparity_2_table, "./Final Results/DOD_byEducCD_absDisparity_2_table.csv", row.names = FALSE)
+write.csv(DoD_byEducCD_absDisparity_2_table, "./Final Results/DoD_byEducCD_absDisparity_2_table.csv", row.names = FALSE)
 
 #DoD relative disparities by CD, Education, and Age table - For Appendix Table 11
-DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
+DoD_byEducCD_relDisparity_2_table <- DoD_byEducCD_relDisparity_2 %>%
   filter(as.integer(CONGRESS2) == 1, as.integer(EDUC) < 4) %>%
   mutate(
     MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
@@ -576,7 +570,7 @@ DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
   summarise_all(list(~.[which.min(is.na(.))])) %>%
   arrange(AGE_CAT_EDUC, CD) %>%
   bind_cols({
-    DOD_byEducCD_relDisparity_2 %>%
+    DoD_byEducCD_relDisparity_2 %>%
       filter(as.integer(CONGRESS2) == 2, as.integer(EDUC) < 4) %>%
       mutate(
         MR = str_trim(format(round(MR,2),nsmall=2),side="both"),
@@ -604,12 +598,11 @@ DOD_byEducCD_relDisparity_2_table <- DOD_byEducCD_relDisparity_2 %>%
 
 #Appendix Table 11
 #DoD relative disparities by CD, Education, and Age table - write to csv
-write.csv(DOD_byEducCD_relDisparity_2_table, "./Final Results/DOD_byEducCD_relDisparity_2_table.csv", row.names = FALSE)
+write.csv(DoD_byEducCD_relDisparity_2_table, "./Final Results/DoD_byEducCD_relDisparity_2_table.csv", row.names = FALSE)
 
-################################################################################
-############################ IMR and DOD Map Data ##############################
-################################################################################
-#Data frames for Maps (Figures 1 & 2 and dashboard maps) - Data + dashboard map code displayed here, but final article maps created outside of R
+# IMR and DoD Map Data ----------------------------------------------------
+
+#Data frames for Maps (Figures 1 & 3 and dashboard maps) - Data + dashboard map code displayed here, but final article maps created outside of R
 
 #Data for IMR Maps by CD - combined Congresses
 IMR_Maps_byCD_2 <- inner_join(cd_outlines_2, IMR_byCD_2) %>%
@@ -622,18 +615,16 @@ IMR_Maps_byCD_2 <- inner_join(cd_outlines_2, IMR_byCD_2) %>%
 save(IMR_Maps_byCD_2, file = "./ShinyApp/IMR_Maps_byCD_2.Rdata")
 
 #Data for DoD Maps by CD - combined Congresses
-DOD_Maps_byCD_2 <- inner_join(cd_outlines_2, DOD_byCD_2) %>%
+DoD_Maps_byCD_2 <- inner_join(cd_outlines_2, DoD_byCD_2) %>%
   group_by(CD, CONGRESS2) %>%
   summarise(CD, MR)%>%
   ungroup() %>%
   mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T))
 
 #Save as R Object for DoD map on Shiny app
-save(DOD_Maps_byCD_2, file = "./ShinyApp/DOD_Maps_byCD_2.Rdata")
+save(DoD_Maps_byCD_2, file = "./ShinyApp/DoD_Maps_byCD_2.Rdata")
 
-################################################################################
-############################### IMR and DOD Maps ###############################
-################################################################################
+# IMR and DoD Maps --------------------------------------------------------
 
 #R versions of IMR and DoD Maps
 
@@ -655,9 +646,9 @@ IMR_Maps_2 <- ggplot(IMR_Maps_byCD_2) +
   labs(fill = "IMR per 1,000 Live Births")
 IMR_Maps_2
 
-#Figure 2 (re-done in GIS for paper)
+#Figure 3 (re-done in GIS for paper)
 #DoD Maps - Combined congresses
-DOD_Maps_2 <- ggplot(DOD_Maps_byCD_2) +
+DoD_Maps_2 <- ggplot(DoD_Maps_byCD_2) +
   geom_sf(aes(fill = jenks), lwd = .1) +
   annotate("point", x = -75.1652, y = 39.9526, colour = "black", size = 2) +
   annotate("point", x = -79.9959, y = 40.4406, colour = "black", size = 2) +
@@ -671,15 +662,13 @@ DOD_Maps_2 <- ggplot(DOD_Maps_byCD_2) +
   guides(fill=guide_legend(nrow=2, byrow = T)) +
   scale_fill_manual(values = colorRampPalette(colors = c("white", "red"))(5))+
   labs(fill = "Mortality Rate, \nper 10,000 People")
-DOD_Maps_2
+DoD_Maps_2
 
-################################################################################
-############################### IMR and DOD Plots ##############################
-################################################################################
+# IMR and DoD Plots -------------------------------------------------------
 
-#IMR and DoD Plots (Figure 3 and Figure 4)
+#IMR and DoD Plots (Figure 2 and Figure 4)
 
-#Figure 3
+#Figure 2
 #IMR plots by CD & race-ethnicity - combined Congresses
 IMR_byCD_byRace_Plots_2 <- ggplot(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0),
                                   aes(x = CD, y = IMR)) + 
@@ -703,7 +692,7 @@ IMR_byCD_byRace_Plots_2
 
 #Figure 4
 #DoD by Education for each age group and CD
-DOD_byEducAge_Plot <- ggplot(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5),
+DoD_byEducAge_Plot <- ggplot(filter(DoD_byEducCD_2, MR > 0, as.integer(EDUC) < 5),
                                 aes(x = CD, y = MR)) + 
   geom_line() + 
   geom_point(size = 3, aes(color = EDUC)) +
@@ -723,16 +712,16 @@ DOD_byEducAge_Plot <- ggplot(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5
   scale_x_discrete(expand=expansion(mult=c(0.1, 0.05))) +
   annotation_logticks(sides="b") + 
   coord_flip()
-DOD_byEducAge_Plot
+DoD_byEducAge_Plot
 
-#Data frame for IMR DOD Scatterplot - Appendix Figure 2
-IMR_DOD <- inner_join(IMR_byCD_2, DOD_byCD_2) %>%
+#Data frame for IMR DoD Scatterplot - Appendix Figure 3
+IMR_DoD <- inner_join(IMR_byCD_2, DoD_byCD_2) %>%
   select(c(CONGRESS2, CD, IMR, MR)) %>%
-  rename(DODMR = MR)
+  rename(DoDMR = MR)
 
-#Appendix Figure 2
-#Scatterplot of DOD x IMR
-IMR_DOD_Scatter <- ggplot(IMR_DOD, aes(x = IMR, y = DODMR)) +
+#Appendix Figure 3
+#Scatterplot of DoD x IMR
+IMR_DoD_Scatter <- ggplot(IMR_DoD, aes(x = IMR, y = DoDMR)) +
   geom_point(aes(color = CD)) +
   facet_wrap(~CONGRESS2) + 
   theme_bw() +
@@ -742,17 +731,15 @@ IMR_DOD_Scatter <- ggplot(IMR_DOD, aes(x = IMR, y = DODMR)) +
   guides(color=guide_legend(nrow=3,byrow=TRUE)) +
   xlab("Infant Mortality Rate, per 1,000 Live Births") +
   ylab("Deaths of Despair Mortality Rate, per 10,000")
-IMR_DOD_Scatter
+IMR_DoD_Scatter
 
-################################################################################
-################################# Sankey Diagram ###############################
-################################################################################
+# Sankey Diagram ----------------------------------------------------------
 
 #Data frame for sankey showing relationship between census tracts from 111/112 to 113/114
 
 #Appendix Figure 1 (and dashboard redistricting figure)
 #Data frame for sankey diagram
-sankey_111_113 <- inner_join(tract_to_cd111, tract_to_cd113) %>%
+sankey_111_113 <- inner_join(tract_to_cd111, tract_to_cd113, relationship = "many-to-many") %>%
   group_by(cd111,cd113) %>%
   select(cd111,cd113) %>%
   mutate(cd111 = paste0('cd111-',sprintf('%02d',cd111)), cd113 = paste0('cd113-',sprintf('%02d',cd113))) %>%

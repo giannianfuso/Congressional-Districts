@@ -1,3 +1,6 @@
+
+# Libraries ---------------------------------------------------------------
+
 rm(list=ls())
 library(tidyverse)
 library(foreign)
@@ -10,16 +13,12 @@ library("writexl")
 library(tidyselect)
 select <- dplyr::select
 
-################################################################################
-################################# Data Location ################################
-################################################################################
+# Data Location -----------------------------------------------------------
 
 #Replace with your own directory path
 dir_name <- "//files.drexel.edu\\encrypted\\SOPH\\UHC\\SchnakeMahl_PAVitalStat\\Data\\"
 
-################################################################################
-################################# Import Data ##################################
-################################################################################
+# Import Data -------------------------------------------------------------
 
 #Columns we need for birth files
 keep_birth <- c("FILENO", "SEX", "CHILDDOB", "MOTHEDU", "MOTHHISP0315", 
@@ -31,7 +30,6 @@ keep_birth <- c("FILENO", "SEX", "CHILDDOB", "MOTHEDU", "MOTHHISP0315",
 birth2010 <- fread(paste0(dir_name, "birthgeo2010.csv")) %>%
   mutate(year = "2010") %>%
   select(one_of(keep_birth))
-
 
 birth2011 <- fread(paste0(dir_name, "birthgeo2011.csv")) %>%
   mutate(year = "2011") %>%
@@ -89,9 +87,7 @@ death2015 <- fread(paste0(dir_name, "deathgeo2015.csv")) %>%
   mutate(EDUC = strtoi(EDUC), year = "2015") %>%
   select(one_of(keep_death))
 
-################################################################################
-################################# Modify Data ##################################
-################################################################################
+# Modify Data -------------------------------------------------------------
 
 #All birth data, no modifications
 birth_original <- bind_rows(birth2010, birth2011, birth2012, 
@@ -215,9 +211,7 @@ death_mutations <- function(df) {
 #All death data, with racial-ethnic and education categories
 death_original_modified <- death_original %>% death_mutations()
 
-################################################################################
-################################# Data Exploration #############################
-################################################################################
+# Data Exploration --------------------------------------------------------
 
 #See how many unknown entries we have with respect to race-ethnicity
 birth_original_modified_noracehisp <- birth_original_modified %>%
@@ -288,29 +282,29 @@ write.csv(infort_nogeo_racehisp, "./Final Results/infort_nogeo_racehisp.csv", ro
 
 #Determine what % of DoD were not geocoded
 #All DoD
-DOD_total <- filter(death_original_modified, DESPAIR==1)%>%
+DoD_total <- filter(death_original_modified, DESPAIR==1)%>%
   mutate(GEOID10 = as.numeric(GEOID10), char = nchar(GEOID10))
 
 #DoD by year
-DOD_total_byYear <- DOD_total %>% group_by(year) %>% summarise(tot = n())
+DoD_total_byYear <- DoD_total %>% group_by(year) %>% summarise(tot = n())
 
 #DoD that could not be geocoded
-DOD_nogeo <- filter(DOD_total, is.na(GEOID10) | char < 10)
+DoD_nogeo <- filter(DoD_total, is.na(GEOID10) | char < 10)
 
 #DoD that could not be geocoded, by year
-DOD_nogeo_byYear <- DOD_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
-  inner_join(DOD_total_byYear) %>% mutate(pct = n/tot * 100)
+DoD_nogeo_byYear <- DoD_nogeo %>% group_by(year) %>% summarise(n=n()) %>%
+  inner_join(DoD_total_byYear) %>% mutate(pct = n/tot * 100)
 
 #% of all DoD that could not be geocoded
-nrow(DOD_nogeo)/nrow(DOD_total)*100
+nrow(DoD_nogeo)/nrow(DoD_total)*100
 
 #Racial-ethnic distribution of infant deaths that could not be geocoded
-dod_nogeo_educ <- DOD_nogeo %>%
+DoD_nogeo_educ <- DoD_nogeo %>%
   group_by(EDUC) %>%
   summarise(n_nogeo = n()) %>%
   mutate(tot_nogeo = sum(n_nogeo), pct_nogeo = n_nogeo/tot_nogeo*100) %>%
   inner_join({
-    DOD_total %>%
+    DoD_total %>%
       filter(!is.na(GEOID10) & char >= 10) %>%
       group_by(EDUC) %>%
       summarise(n_geo = n()) %>%
@@ -318,13 +312,11 @@ dod_nogeo_educ <- DOD_nogeo %>%
   })
 
 #Write to CSV
-write.csv(dod_nogeo_educ, "./Final Results/dod_nogeo_educ.csv", row.names = F)
+write.csv(DoD_nogeo_educ, "./Final Results/DoD_nogeo_educ.csv", row.names = F)
 
-################################################################################
-########################## Merge Data with Crosswalks ##########################
-################################################################################
+# Merge Data With Crosswalks ----------------------------------------------
 
-#Crosswalk with Congressional District 111 (2009-2010)
+#Crosswalk with Congress 111 (2009-2010)
 tract_to_cd111 <- fread("Data/crosswalk_cd111.csv") %>%
   subset(select = -c(cntyname, pop10)) %>%
   mutate(
@@ -336,28 +328,28 @@ tract_to_cd111 <- fread("Data/crosswalk_cd111.csv") %>%
       GEOID10 = str_remove(GEOID10, "^0+"),
       GEOID10 = as.integer64(GEOID10))
 
-#Merge cd111 crosswalk with 2010 birth and death files
+#Merge 111 crosswalk with 2010 birth and death files
 birth2010_cd <- inner_join(birth2010, tract_to_cd111) %>%
   rename(CD = cd111, ALLOCATION = afact111)
 
 death2010_cd <- inner_join(death2010, tract_to_cd111) %>%
   rename(CD = cd111, ALLOCATION = afact111)
 
-#Merge cd111 crosswalk with 2012 birth and death files
+#Merge 111 crosswalk with 2011 birth and death files
 birth2011_cd <- inner_join(birth2011, tract_to_cd111) %>%
   rename(CD = cd111, ALLOCATION = afact111)
 
 death2011_cd <- inner_join(death2011, tract_to_cd111) %>%
   rename(CD = cd111, ALLOCATION = afact111)
 
-#Merge cd111 crosswalk with 2012 birth and death files
+#Merge 111 crosswalk with 2012 birth and death files
 birth2012_cd <- inner_join(birth2012, tract_to_cd111) %>%
   rename(CD = cd111, ALLOCATION = afact111)
 
 death2012_cd <- inner_join(death2012, tract_to_cd111) %>%
   rename(CD = cd111, ALLOCATION = afact111)
 
-#Crosswalk with Congressional District 113 (2013-2014)
+#Crosswalk with Congress 113 (2013-2014)
 tract_to_cd113 <- fread("Data/crosswalk_cd113.csv") %>%
   subset(select = -c(cntyname, pop10)) %>%
   mutate(
@@ -369,21 +361,21 @@ tract_to_cd113 <- fread("Data/crosswalk_cd113.csv") %>%
     GEOID10 = str_remove(GEOID10, "^0+"),
     GEOID10 = as.integer64(GEOID10))
 
-#Merge cd113 crosswalk with 2013 birth and death files
+#Merge 113 crosswalk with 2013 birth and death files
 birth2013_cd <- inner_join(birth2013, tract_to_cd113) %>%
   rename(CD = cd113, ALLOCATION = afact113)
 
 death2013_cd <- inner_join(death2013, tract_to_cd113) %>%
   rename(CD = cd113, ALLOCATION = afact113)
 
-#Merge cd113 crosswalk with 2014 birth and death files
+#Merge 113 crosswalk with 2014 birth and death files
 birth2014_cd <- inner_join(birth2014, tract_to_cd113) %>%
   rename(CD = cd113, ALLOCATION = afact113)
 
 death2014_cd <- inner_join(death2014, tract_to_cd113) %>%
   rename(CD = cd113, ALLOCATION = afact113)
 
-#Crosswalk with Congressional District 114 (2015-2016)
+#Crosswalk with Congress 114 (2015-2016)
 tract_to_cd114 <- fread("Data/crosswalk_cd114.csv") %>%
   subset(select = -c(cntyname, pop10)) %>%
   mutate(
@@ -395,16 +387,14 @@ tract_to_cd114 <- fread("Data/crosswalk_cd114.csv") %>%
     GEOID10 = str_remove(GEOID10, "^0+"),
     GEOID10 = as.integer64(GEOID10))
 
-#Merge cd114 crosswalk with 2015 birth and death files
+#Merge 114 crosswalk with 2015 birth and death files
 birth2015_cd <- inner_join(birth2015, tract_to_cd114) %>%
   rename(CD = cd114, ALLOCATION = afact114)
 
 death2015_cd <- inner_join(death2015, tract_to_cd114) %>%
   rename(CD = cd114, ALLOCATION = afact114)
 
-################################################################################
-######################### Additional Data Modifications ########################
-################################################################################
+# Additional Data Modifications -------------------------------------------
 
 #Additional birth modifications
 birth_mutations_cd <- function(df) {
@@ -539,9 +529,7 @@ death_cd <- bind_rows(death2010_cd, death2011_cd, death2012_cd,
                       death2013_cd, death2014_cd, death2015_cd) %>%
   death_mutations_cd()
 
-################################################################################
-############################### Other Crosswalks ###############################
-################################################################################
+# Other Crosswalks --------------------------------------------------------
 
 #Year to congress crosswalk
 CONGRESS <- death_cd %>%
@@ -564,9 +552,7 @@ RACE2 <- death_cd %>%
   select(c(RACE, RACE2)) %>%
   unique()
 
-################################################################################
-############################# Pull Population by Age ###########################
-################################################################################
+# Pull Population by Age --------------------------------------------------
 
 #ACS variables
 var_names <- load_variables(2015, "acs5", cache = TRUE) %>% rename(variable = name)
@@ -610,9 +596,7 @@ population_pop_25_64_byCD <- bind_rows(pop_25_64_2011, pop_pop_25_64_2016) %>%
   ungroup() %>%
   inner_join(CONGRESS)
 
-################################################################################
-####################### Pull Population by Age & Education #####################
-################################################################################
+# Pull Population by Age & Education --------------------------------------
 
 #Pull ACS population data and re-categorize to match our education categories
 popEducSexAge_lessThanHSMale <- c("B15001_012", "B15001_013", "B15001_020", "B15001_021", "B15001_028", "B15001_029")
@@ -660,7 +644,7 @@ population_byEducAgeCD_byCongress2 <- bind_rows(popEducSexAge_all_2011, popEducS
       grepl("Female", label, fixed = TRUE) == TRUE ~ 2) %>%
       factor(levels = c(1,2),
              labels = c("Male", "Female")),
-    "EDUC" = case_when(
+    EDUC = case_when(
       grepl("Less than 9th grade", label, fixed = TRUE) == TRUE ~ 1,
       grepl("9th to 12th grade, no diploma", label, fixed = TRUE) == TRUE ~ 1,
       grepl("High school graduate", label, fixed = TRUE) == TRUE ~ 2,
@@ -686,9 +670,7 @@ population_byEducAgeCD_byCongress2 <- bind_rows(popEducSexAge_all_2011, popEducS
   inner_join(CONGRESS)%>%
   select(-c(year, CONGRESS))
 
-################################################################################
-########################### Pull Population by Race ############################
-################################################################################
+# Pull Population by Race -------------------------------------------------
 
 #Population variables - by race
 pop_byRace_vars <- c("B03002_012", "B03002_003", "B03002_004",

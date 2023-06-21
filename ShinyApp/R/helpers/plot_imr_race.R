@@ -1,9 +1,8 @@
-#'  This function will create ggplotly for the imr_race
+#'  This function will create ggplotly for IMR
 #'  @param data:   
 #'  @param colors:  
 #'  @param Congress_Charts_tmp: 
 #'  @param Displayed_tmp:  
-#'  
 
 plot_imr_race = function(data, colors,  Congress_Charts_tmp, Displayed_tmp) {
   if (Congress_Charts_tmp != "116 (2019 - 2020)*") {data <- filter(data, CONGRESS2 == Congress_Charts_tmp)}
@@ -13,7 +12,7 @@ plot_imr_race = function(data, colors,  Congress_Charts_tmp, Displayed_tmp) {
   {axis_title <- "Absolute Disparity in Mortality Rate, per 1,000 Live Births"}
   
   ggplotly(ggplot(data, aes(x = CD, y = IMR, group = paired, 
-                                   text = paste0("CD: ", CD, "<br>IMR: ", round(IMR, 2),
+                                   text = paste0("CD: ", substr(CD, 3, length(CD)), "<br>IMR: ", round(IMR, 2),
                                                "<br>Race/Hispanic Origin: ", RACEHISP))) +
              geom_line() +
              geom_point(size = 3, aes(color = RACEHISP)) +

@@ -36,7 +36,7 @@ ui <- fluidPage(
                          h6("A mortality rate is a measure of the number of deaths in a particular population,
                             scaled to the size of that population. Infant Mortality Rate (IMR) calculates the 
                             number of premature deaths in a given population divided by the number of live births in that same population.
-                            It is then multiplied by 1,000, as it is reported per 1,000 live births. Deaths of Despair Mortality Rate
+                            It is then multiplied by 1,000, as it is reported per 1,000 live births. Deaths of Despair (DoD) Mortality Rate
                             calculates the number of deaths of despair in a given population divided by that same population, multiplied by
                             10,000, as it is reported per 10,000 people.")),
                        mainPanel(
@@ -52,7 +52,7 @@ ui <- fluidPage(
                          selectInput(choices = NULL, inputId = "Subgroup", label = "Select a subgrouping*"),
                          selectInput(choices = NULL, inputId = "AgeGroup", label = "Select an age group"),
                          h6("* The ACS does not make data available by race-ethnicity at the census tract level, so we use race alone as a subgrouping when looking
-                            at DOD mortality rates. Due to smaller group sizes, we also provide the option of looking at DOD mortaity rates in white/non-white populations.")),
+                            at DoD mortality rates. Due to smaller group sizes, we also provide the option of looking at DoD mortaity rates in white/non-white populations.")),
                        mainPanel(
                          plotlyOutput('Lollipop', height = 650)
                        )),
@@ -83,8 +83,8 @@ server <- function(input, output, session) {
   #IMR map data
   load(file = "IMR_Maps_byCD_2.Rdata", envir=.GlobalEnv)
   
-  #DOD map data
-  load(file = "DOD_Maps_byCD_2.Rdata", envir=.GlobalEnv)
+  #DoD map data
+  load(file = "DoD_Maps_byCD_2.Rdata", envir=.GlobalEnv)
   
   #IMR plot data
   load(file = "IMR_byCD_byRace_2.Rdata", envir=.GlobalEnv)
@@ -92,20 +92,20 @@ server <- function(input, output, session) {
   #IMR plot data - disparities
   load(file = "IMR_byCD_byRace_absDisparity_2.Rdata", envir=.GlobalEnv)
   
-  #DOD plot data - by race
-  load(file = "DOD_byRaceCD_2.Rdata", envir=.GlobalEnv)
+  #DoD plot data - by race
+  load(file = "DoD_byRaceCD_2.Rdata", envir=.GlobalEnv)
   
-  #DOD plot data - by race - disparities
-  load(file = "DOD_byRaceCD_absDisparity_2.Rdata", envir=.GlobalEnv)
+  #DoD plot data - by race - disparities
+  load(file = "DoD_byRaceCD_absDisparity_2.Rdata", envir=.GlobalEnv)
   
-  #DOD plot data - by race - rolled up
-  load(file = "DOD_byRace2CD_2.Rdata", envir=.GlobalEnv)
+  #DoD plot data - by race - rolled up
+  load(file = "DoD_byRace2CD_2.Rdata", envir=.GlobalEnv)
   
-  #DOD plot data - by education
-  load(file = "DOD_byEducCD_2.Rdata", envir=.GlobalEnv)
+  #DoD plot data - by education
+  load(file = "DoD_byEducCD_2.Rdata", envir=.GlobalEnv)
   
-  #DOD plot data - by education - disparities
-  load(file = "DOD_byEducCD_absDisparity_2.Rdata", envir=.GlobalEnv)
+  #DoD plot data - by education - disparities
+  load(file = "DoD_byEducCD_absDisparity_2.Rdata", envir=.GlobalEnv)
   
   #Sakney
   load(file = "sankey_111_113_full.Rdata", envir=.GlobalEnv)
@@ -137,18 +137,18 @@ server <- function(input, output, session) {
                 title = "IMR, per 1,000 <br> Live Births", opacity = 1,
                 labFormat = labelFormat(digits = 2, transform = function(x) {sort(x, decreasing = TRUE)}))
     
-    dod_popup <- paste0("<strong>", filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$CD, 
-                        "</strong>", "<br><strong>DOD Mortality Rate: </strong>", 
-                        sprintf("%.2f", filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR))
+    dod_popup <- paste0("<strong>", filter(DoD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$CD, 
+                        "</strong>", "<br><strong>DoD Mortality Rate: </strong>", 
+                        sprintf("%.2f", filter(DoD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR))
     
-    dod_bin <- classIntervals(DOD_Maps_byCD_2$MR,n=5,style="jenks")$brks
+    dod_bin <- classIntervals(DoD_Maps_byCD_2$MR,n=5,style="jenks")$brks
     
-    dod_colors <- colorBin("Reds", domain = as.numeric(filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR), bins = dod_bin)
+    dod_colors <- colorBin("Reds", domain = as.numeric(filter(DoD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR), bins = dod_bin)
     
-    dod_colors_rev <- colorBin("Reds", domain = as.numeric(filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR), 
+    dod_colors_rev <- colorBin("Reds", domain = as.numeric(filter(DoD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)$MR), 
                                bins = dod_bin, reverse = TRUE)
     
-    DOD_Maps_Interactive <- leaflet(filter(DOD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)) %>%
+    DoD_Maps_Interactive <- leaflet(filter(DoD_Maps_byCD_2, CONGRESS2 == input$Congress_Maps)) %>%
       addPolygons(
         stroke = TRUE,
         weight = 0.5,
@@ -157,14 +157,14 @@ server <- function(input, output, session) {
         fillOpacity = 0.8,
         smoothFactor = 0.5,
         popup = dod_popup) %>%
-      addLegend("topright", pal = dod_colors_rev, values = DOD_Maps_byCD_2$MR,
-                title = "DOD MR <br> per 10,000",
+      addLegend("topright", pal = dod_colors_rev, values = DoD_Maps_byCD_2$MR,
+                title = "DoD MR <br> per 10,000",
                 opacity = 1,
                 labFormat = labelFormat(digits = 2, transform = function(x) sort(x, decreasing = TRUE)))
     
     
     if(input$Measure_Maps == "Infant Mortality Rate") {map <- IMR_Maps_Interactive}
-    if(input$Measure_Maps == "Deaths of Despair Mortality Rate") {map <- DOD_Maps_Interactive}
+    if(input$Measure_Maps == "Deaths of Despair Mortality Rate") {map <- DoD_Maps_Interactive}
     map
   })
   
@@ -232,21 +232,21 @@ server <- function(input, output, session) {
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Mortality Rates")) {filename <-
-         plot_dod(filter(DOD_byRaceCD_2, MR > 0, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DoD_byRaceCD_2, MR > 0, as.integer(RACE) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race") &
        (input$Displayed == "Absolute Disparities")) {filename <- 
-         plot_dod(filter(DOD_byRaceCD_absDisparity_2, RACE!="White"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DoD_byRaceCD_absDisparity_2, RACE!="White"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Race (Rolled-Up)")) {filename <-
-         plot_dod(filter(DOD_byRace2CD_2, MR > 0), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DoD_byRace2CD_2, MR > 0), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
-       (input$Displayed == "Mortality Rates")) {filename <- plot_dod(filter(DOD_byEducCD_2, MR > 0, as.integer(EDUC) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+       (input$Displayed == "Mortality Rates")) {filename <- plot_dod(filter(DoD_byEducCD_2, MR > 0, as.integer(EDUC) < 5), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     if((input$Measure_Charts == "Deaths of Despair Mortality Rate") &
        (input$Subgroup == "Education") &
        (input$Displayed == "Absolute Disparities")) {filename <-
-         plot_dod(filter(DOD_byEducCD_absDisparity_2, EDUC!="Bachelor/Master/Doctorate/Professional Degree"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
+         plot_dod(filter(DoD_byEducCD_absDisparity_2, EDUC!="Bachelor/Master/Doctorate/Professional Degree"), colors, input$Congress_Charts, input$Subgroup, input$Displayed, input$AgeGroup)}
     filename
   })
 

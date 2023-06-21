@@ -1,4 +1,4 @@
-#'  This function will create ggplotly for the imr_race
+#'  This function will create ggplotly for the DoD
 #'  @param data: 
 #'  @param colors: 
 #'  @param Congress_Charts_tmp: 
@@ -19,7 +19,7 @@ plot_dod = function(data, colors, Congress_Charts_tmp, Subgroup_tmp, Displayed_t
   if(Displayed_tmp =="Absolute Disparities") 
     {trans_tmp <- scale_y_continuous(trans = "identity")
     axis_title <- "Absolute Disparity in Mortality Rate, per 10,000 People"}
-  ggplotly(ggplot(filtered_data, aes(x = CD, y = MR, group = paired, text = paste0("CD: ", CD, "<br>MR: ", round(MR, 2),
+  ggplotly(ggplot(filtered_data, aes(x = CD, y = MR, group = paired, text = paste0("CD: ", substr(CD, 3, length(CD)), "<br>MR: ", round(MR, 2),
                                                                                    "<br>", Subgroup_tmp, ": ", aes_color))) +
              geom_line() +
              geom_point(size = 3, aes(color = aes_color)) +
@@ -29,7 +29,7 @@ plot_dod = function(data, colors, Congress_Charts_tmp, Subgroup_tmp, Displayed_t
                                            "Less than High School" = colors$LessHS, "High School" = colors$HS, 
                                            "Some College/Associate Degree" = colors$SomeCollege, 
                                            "Bachelor/Master/Doctorate/Professional Degree" = colors$Bachelor)) +
-             ggtitle(paste0("DOD Mortality Rates - ", Congress_Charts_tmp)) +
+             ggtitle(paste0("DoD Mortality Rates - ", Congress_Charts_tmp)) +
              xlab("Congressional District") +
              ylab(axis_title) +
              labs(color = Subgroup_tmp) +
