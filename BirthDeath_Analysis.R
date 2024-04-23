@@ -129,16 +129,22 @@ write.csv(IMR_byCD_wide, "./Final Results/IMR_byCD_wide.csv", row.names = F)
 #Data for IMR Map for GIS - 111/112
 IMR_111_112 <- IMR_byCD_2 %>%
   ungroup() %>%
-  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T),
+         CONGRESS2_AJE = case_when(
+           as.integer(CONGRESS2) == 1 ~ "111th-112th (2010-2012)", 
+           as.integer(CONGRESS2) == 2 ~ "113th-114th (2013-2016)")) %>%
   filter(as.integer(CONGRESS2)==1) %>%
-  select(CD, IMR, jenks)
+  select(CONGRESS2_AJE, CD, IMR, jenks)
 
 #Data for IMR Map for GIS - 113/114
 IMR_113_114 <- IMR_byCD_2 %>%
   ungroup() %>%
-  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  mutate(jenks=cut(IMR, breaks=classIntervals(IMR,n=5,style="jenks")$brks,include.lowest=T),
+         CONGRESS2_AJE = case_when(
+           as.integer(CONGRESS2) == 1 ~ "111th-112th (2010-2012)", 
+           as.integer(CONGRESS2) == 2 ~ "113th-114th (2013-2016)")) %>%
   filter(as.integer(CONGRESS2)==2) %>%
-  select(CD, IMR, jenks)
+  select(CONGRESS2_AJE, CD, IMR, jenks)
 
 #Save as CSVs to create IMR maps in GIS
 write.csv(IMR_111_112, "./Final Results/IMR_111_112.csv", row.names = F)
@@ -340,16 +346,22 @@ write.csv(DoD_byCD_wide, "./Final Results/DoD_byCD_wide.csv", row.names = F)
 #Data for DoD Map for GIS - 111/112
 DoD_111_112 <- DoD_byCD_2 %>%
   ungroup() %>%
-  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T),
+         CONGRESS2_AJE = case_when(
+           as.integer(CONGRESS2) == 1 ~ "111th-112th (2010-2012)", 
+           as.integer(CONGRESS2) == 2 ~ "113th-114th (2013-2016)")) %>%
   filter(as.integer(CONGRESS2)==1) %>%
-  select(CD, MR, jenks)
+  select(CONGRESS2_AJE, CD, MR, jenks)
 
 #Data for DoD Map for GIS - 113/114
 DoD_113_114 <- DoD_byCD_2 %>%
   ungroup() %>%
-  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T)) %>%
+  mutate(jenks=cut(MR, breaks=classIntervals(MR,n=5,style="jenks")$brks,include.lowest=T),
+         CONGRESS2_AJE = case_when(
+           as.integer(CONGRESS2) == 1 ~ "111th-112th (2010-2012)", 
+           as.integer(CONGRESS2) == 2 ~ "113th-114th (2013-2016)")) %>%
   filter(as.integer(CONGRESS2)==2) %>%
-  select(CD, MR, jenks)
+  select(CONGRESS2_AJE, CD, MR, jenks)
 
 #Save as CSVs to create DoD maps in GIS
 write.csv(DoD_111_112, "./Final Results/DoD_111_112.csv", row.names = F)
@@ -675,6 +687,10 @@ DoD_Maps_2
 IMR_byCD_byRace_Plots_2_panels <- list()
 for (i in 1:2) {
   IMR_byCD_byRace_Plots_2_panels[[i]] <- filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0, as.integer(CONGRESS2) == i) %>%
+    mutate(
+      CONGRESS2_AJE = case_when(
+        as.integer(CONGRESS2) == 1 ~ "111th-112th (2010-2012)", 
+        as.integer(CONGRESS2) == 2 ~ "113th-114th (2013-2016)")) %>%
     ggplot(aes(x = CD, y = IMR)) + 
     geom_line() + 
     geom_point(size = 3, aes(color = RACEHISP)) +
@@ -686,16 +702,20 @@ for (i in 1:2) {
           axis.text = element_text(color = "black", size = 12),
           legend.position = "bottom",
           legend.text = element_text(color = if (i == 1) "white" else "black", size = 12),
-          strip.text = element_text(color = "black", size = 12, face = "bold"), 
+          legend.background = element_blank(),
+          legend.box.background = element_rect(colour = if (i == 1) "white" else "red"),
           legend.title = element_blank(),
+          strip.text = element_text(color = "black", size = 12), 
           text = element_text(color = "black"), 
           strip.background = element_blank(),
-          plot.title = element_text(hjust = 0.5, face = "bold")) + 
+          plot.title.position = "plot",
+          plot.title = element_text(color = "black", size = 12)) + 
     guides(color = guide_legend(nrow = 2, byrow = TRUE)) +
     xlab("Congressional District") +
-    ylab("IMR per 1,000 Live Births") +
+    ylab("IMR per 1000 Live Births") +
     ylim(c(0, max(filter(IMR_byCD_byRace_2, as.integer(RACEHISP) < 6, IMR > 0)$IMR))) +
-    ggtitle(paste0(if (i == 1) {"111 - 112 (2010 - 2012)"} else {"113 - 114 (2013 - 2015)"})) +
+    ggtitle(paste0(if (i == 1) {"A)"} else {"B)"})) +
+    facet_wrap(~CONGRESS2_AJE) +
     coord_flip() +
     if (i == 1) {
       guides(color = guide_legend(nrow = 2, byrow = TRUE,
@@ -704,12 +724,14 @@ for (i in 1:2) {
       labs(color = "Race/Hispanic Origin")
     }
 }
+
 IMR_byCD_byRace_Plots_2_panels[[1]]
 IMR_byCD_byRace_Plots_2_panels[[2]]
 
 IMR_byCD_byRace_Plots_2 <- ggarrange(IMR_byCD_byRace_Plots_2_panels[[1]], 
                                     IMR_byCD_byRace_Plots_2_panels[[2]], 
                                     ncol = 1, nrow = 2)
+
 IMR_byCD_byRace_Plots_2
 
 #Figure 4
@@ -717,30 +739,40 @@ IMR_byCD_byRace_Plots_2
 DoD_byEducAge_Plot_panels <- list()
 for(i in 1:2) {
   DoD_byEducAge_Plot_panels[[i]] <- filter(DoD_byEducCD_2, MR > 0, as.integer(EDUC) < 5, as.integer(CONGRESS2) == i) %>%
+    mutate(
+      CONGRESS2_AJE = case_when(
+        as.integer(CONGRESS2) == 1 ~ "111th-112th (2010-2012)", 
+        as.integer(CONGRESS2) == 2 ~ "113th-114th (2013-2016)"),
+      AGE_CAT_EDUC_AJE = case_when(
+        as.integer(AGE_CAT_EDUC) == 3 ~ "25-34 y",
+        as.integer(AGE_CAT_EDUC) == 4 ~ "35-44 y", 
+        as.integer(AGE_CAT_EDUC) == 5 ~ "45-64 y")) %>%
     ggplot(aes(x = CD, y = MR)) + 
     geom_line() + 
     geom_point(size = 3, aes(color = EDUC)) +
     scale_color_manual(values = c("Less than High School" = color_LessHS, "High School" = color_HS, 
                                   "Some College/Associate Degree" = color_SomeCollege, "Bachelor/Master/Doctorate/Professional Degree" = color_Bachelor)) + 
     xlab("Congressional District") +
-    ylab("Mortality Rate, per 10,000 People") +
+    ylab("Mortality Rate, per 10 000 People") +
     labs(color = "Education") + 
-    facet_wrap(~ AGE_CAT_EDUC, ncol = 3) + 
+    facet_nested(~ CONGRESS2_AJE + AGE_CAT_EDUC_AJE) + 
     theme_bw() + 
-    theme(axis.title = element_text(size = 10), 
+    theme(axis.title = element_text(size = 11), 
           axis.text = element_text(size = 10),
           legend.position = "bottom", 
-          legend.text = element_text(color = if (i == 1) "white" else "black", size = 10),
-          strip.text = element_text(size = 10, face = "bold"), 
+          legend.text = element_text(color = if (i == 1) "white" else "black", size = 11),
+          legend.background = element_blank(),
+          legend.box.background = element_rect(colour = if (i == 1) "white" else "red"),
           legend.title = element_blank(),
+          strip.text = element_text(size = 11), 
           text = element_text(color="black"), 
           strip.background = element_blank(),
-          plot.title = element_text(hjust = 0.5, face = "bold")) + 
+          plot.title.position = "plot") + 
     guides(color = guide_legend(nrow = 2)) +
     scale_y_continuous(trans = 'log10', breaks = c(1,10,100,1000), limits=c(.1, NA), labels = c(1,10,100,1000)) +
     scale_x_discrete(expand=expansion(mult=c(0.1, 0.05))) +
     annotation_logticks(sides="b") + 
-    ggtitle(paste0(if(i==1){"111 - 112 (2010 - 2012)"} else {"113 - 114 (2013 - 2015)"})) +
+    ggtitle(paste0(if(i==1){"A)"} else {"B)"})) +
     coord_flip() +
     if (i == 1) {
       guides(color = guide_legend(nrow = 2, byrow = TRUE,
@@ -755,6 +787,8 @@ DoD_byEducAge_Plot_panels[[2]]
 DoD_byEducAge_Plot <- ggarrange(DoD_byEducAge_Plot_panels[[1]], 
                                 DoD_byEducAge_Plot_panels[[2]],
                                 ncol = 1, nrow = 2)
+
+DoD_byEducAge_Plot
 
 
 #Data frame for IMR DoD Scatterplot - Appendix Figure 3
